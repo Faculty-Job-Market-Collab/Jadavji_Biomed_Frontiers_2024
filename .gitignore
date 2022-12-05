@@ -1,10 +1,8 @@
 *.pdf
 *.csv
 /data
-*/data
-*/figures
-*/manuscript
+/figures
+/manuscript
 *.xlsx
 *.docx
-/BWF_grant
 *.RData
