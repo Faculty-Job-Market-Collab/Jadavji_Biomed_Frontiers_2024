@@ -9,12 +9,13 @@ bio_ids <- demo_data %>%
 
 bio_tidy_data <- left_join(bio_ids, tidy_data, by = 'id') 
 
-#Figure 1.
+#Figure 1.----
 bio_demo_data <- left_join(bio_ids, demo_data, by = 'id') %>% distinct()
 
 bio_network_data <- left_join(bio_ids, network_data, by = 'id') %>% distinct()
 
-bio_qualifications <- left_join(bio_ids, qualifications, by = 'id') %>% distinct()
+bio_qualifications <- left_join(bio_ids, qualifications, by = 'id') %>% distinct() %>% 
+  mutate(postdoc_fellow = if_else(str_detect(grants_awarded, "Postdoctoral"), "Yes", "No"))
 
 bio_qualif_data <- left_join(bio_ids, qualif_data, by = 'id') %>% distinct()
 
@@ -22,7 +23,7 @@ bio_app_outcomes <- left_join(bio_ids, app_outcomes, by = 'id') %>% distinct()
 
 source("nafisa/code/figure_1.R")
 
-## Figure 2. 
+## Figure 2. ----
 fig2_data <- bio_tidy_data %>% 
   filter(question == "adjusted_gender" | 
            question == "residence" | question == "position" |
@@ -33,7 +34,7 @@ fig2_data <- bio_tidy_data %>%
 
 source("nafisa/code/figure_2.R")
 
-# Fig 3.
+# Fig 3.----
 fig3_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(question == "adjusted_gender" | question == "off_site_interviews" |
@@ -54,7 +55,7 @@ fig3_data <- bio_tidy_data %>%
 
 source("nafisa/code/figure_3.R")
 
-# Figure 4. 
+# Figure 4. ----
 fig4_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(question == "adjusted_gender" | question == "CNS_status" |
@@ -74,7 +75,7 @@ fig4_data <- bio_tidy_data %>%
 
 source("nafisa/code/figure_4.R")
 
-#Figure 5. 
+#Figure 5. ----
 
 fig5_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 

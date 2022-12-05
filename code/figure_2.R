@@ -95,17 +95,17 @@ fig2_stats_tbl <- fig2_stats_tbl_raw %>%
 write_csv(fig2_stats_tbl, "nafisa/figures/fig2_stats.csv")
 
 #generate plot----
-Fig2ab <- plot_grid(fig2a_plot, fig2b_plot, 
-                  labels = c('A', 'B'),
-                  rel_widths = c(.75, 1),
-                  label_size = 18, nrow = 1)
-
-Fig2cd <- plot_grid(fig2c_plot, fig2d_plot,
-                    labels = c('C', 'D'),
-                    label_size = 18, nrow = 1)
-
-Fig2 <- plot_grid(Fig2ab, Fig2cd, nrow = 2)
-
-
-ggsave("Figure_2.png", device = 'png', units = "in", scale = 1.75,
-       path = 'nafisa/figures/', width = 6, height = 4)
+#Fig2ab <- plot_grid(fig2a_plot, fig2b_plot, 
+#                  labels = c('A', 'B'),
+#                  rel_widths = c(.75, 1),
+#                  label_size = 18, nrow = 1)
+#
+#Fig2cd <- plot_grid(fig2c_plot, fig2d_plot,
+#                    labels = c('C', 'D'),
+#                    label_size = 18, nrow = 1)
+#
+#Fig2 <- plot_grid(Fig2ab, Fig2cd, nrow = 2)
+#
+#
+#ggsave("Figure_2.png", device = 'png', units = "in", scale = 1.75,
+#       path = 'nafisa/figures/', width = 6, height = 4)#
