@@ -1,8 +1,9 @@
-
+#load data, functions, and packages
 source("code/load_data.R")
 
 library(ggsignif)
-# Identify biological science responses
+
+# Identify biological science responses----
 bio_ids <- demo_data %>% 
   filter(response == "Biological Sciences") %>% 
   distinct() %>% select(id)
@@ -21,24 +22,16 @@ bio_qualif_data <- left_join(bio_ids, qualif_data, by = 'id') %>% distinct()
 
 bio_app_outcomes <- left_join(bio_ids, app_outcomes, by = 'id') %>% distinct()
 
-source("nafisa/code/figure_1.R")
+source("jadavji_biology/code/figure_1.R")
 
-## Figure 2. ----
-fig2_data <- bio_tidy_data %>% 
-  filter(question == "adjusted_gender" | 
-           question == "residence" | question == "position" |
-           question == "number_postdocs") %>% 
-  select(id, question, response) %>% distinct() %>% 
-  spread(key = question, value = response) %>% 
-  filter(!is.na(adjusted_gender)) 
+#Figure 2. ----
+source("jadavji_biology/code/figure_2.R")
 
-source("nafisa/code/figure_2.R")
-
-# Fig 3.----
+#Figure 3.----
 fig3_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(question == "adjusted_gender" | question == "off_site_interviews" |
-           question == "on_site_interviews" | 
+           question == "on_site_interviews" | question == "peer" |
            question == "faculty_offers" | 
            question == "apps_submitted_binned" |
            question == "apps_submitted") %>% 
@@ -53,13 +46,13 @@ fig3_data <- bio_tidy_data %>%
   ),
   faculty_offers = factor(faculty_offers, levels = c("0", "1", ">1")))
 
-source("nafisa/code/figure_3.R")
+source("jadavji_biology/code/figure_3.R")
 
 # Figure 4. ----
 fig4_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(question == "adjusted_gender" | question == "CNS_status" |
-           question == "CNS_first_author" | 
+           question == "CNS_first_author" | question == "peer" |
            question == "faculty_offers") %>% 
   distinct() %>% 
   spread(key = question, value = response)  %>% distinct() %>% 
@@ -73,15 +66,13 @@ fig4_data <- bio_tidy_data %>%
   faculty_offers = factor(faculty_offers, levels = c("0", "1", ">1")),
   CNS_first_author = replace_na(CNS_first_author, "0"))
 
-source("nafisa/code/figure_4.R")
-
 #Figure 5. ----
-
 fig5_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(question == "adjusted_gender" |
            question == "teaching_status" |
-           question == "faculty_offers") %>% 
+           question == "faculty_offers" |
+           question == "peer") %>% 
   distinct() %>% 
   spread(key = question, value = response) %>% 
   filter(!is.na(adjusted_gender)) %>% 
@@ -124,39 +115,9 @@ fig5_data <- fig5_data_join %>%
          inst_type_bin = str_replace_all(inst_type_bin, "1", "I")) %>% 
   distinct()
 
-source("nafisa/code/figure_5.R")
+source("jadavji_biology/code/figure_4.R")
 
-#fig 6----
-fig6_data <- bio_tidy_data %>% 
-  select(id, question, response) %>% 
-  filter(!is.na(question)) %>% 
-  filter(question %in% c("first_author", "corresponding_author", "CNS_status",
-                         "peer-reviewed_papers", "scholar_hindex", 
-                         "CNS_first_author",
-                         "scholar_citations_all","transition_award", 
-                         "fellowship", "application_cycles", "faculty_offers",
-                         "apps_submitted", "grants_awarded")) %>% 
-  distinct()
-
-offer_percent_data <- fig6_data %>% 
-  filter(question == "apps_submitted" | question == "faculty_offers") %>% 
-  spread(key = question, value = response) %>% 
-  mutate(perc_offers = get_percent(faculty_offers, apps_submitted)) %>% 
-  select(id, perc_offers)
-
-fig6_summary <- fig6_data %>% 
-  filter(question %not_in% c("transition_award", "fellowship",
-                             "grants_awarded", "CNS_status")) %>% 
-  group_by(question) %>% 
-  summarise(n = n(), med = median(as.numeric(response), 
-                                  na.rm = TRUE))
-
-fig6_data <- left_join(fig6_data, offer_percent_data, by = "id") %>% 
-  distinct()
-
-source("nafisa/code/figure_6.R")
-
-source("nafisa/code/figure_7.R")
+source("jadavji_biology/code/figure_5.R")
 
 #data tables----
 
@@ -178,7 +139,7 @@ demo_table <- bio_demo_data %>%
   count(question, response) %>% 
   mutate(percent_total = get_percent(n, 332))
 
-#write_csv(demo_table, "nafisa/figures/demographics.csv")
+#write_csv(demo_table, "jadavji_biology/figures/demographics.csv")
 
 #table of application metrics
 metrics_table <- bio_tidy_data %>% 
@@ -200,7 +161,7 @@ metrics_table <- bio_tidy_data %>%
   mutate(range = paste0("(", min_val, ", ", max_val, ")")) %>% 
   select(-min_val, -max_val)
 
-#write_csv(metrics_table, "nafisa/figures/metrics.csv")
+#write_csv(metrics_table, "jadavji_biology/figures/metrics.csv")
 
 metrics_table2 <- bio_tidy_data %>% 
   select(id, question, response) %>% 
@@ -211,4 +172,4 @@ metrics_table2 <- bio_tidy_data %>%
   count(question, response) %>% 
   mutate(percent = get_percent(n, 332))
 
-#write_csv(metrics_table2, "nafisa/figures/grants.csv")
+#write_csv(metrics_table2, "jadavji_biology/figures/grants.csv")

@@ -1,50 +1,45 @@
-#Figure 5. Teaching and application submissions by gender & offers
+#Figure 5. Traditional measures of success by PEER status status & offers
 
-#PUI vs RI
-#5a----
-fig5_gen_aov_data <- fig5_data %>% 
-  filter(!is.na(inst_type)) %>% 
-  filter(!is.na(adjusted_gender)) %>% 
-  select(id, adjusted_gender, inst_type, values) %>% 
-  distinct()
+#A. ----
+fig5a_table <- table(fig3_data$apps_submitted, fig3_data$peer)
 
-fig5_gen_aov_mean <- fig5_gen_aov_data %>% group_by(adjusted_gender, inst_type) %>% 
-  summarise(avg = mean(as.numeric(values), na.rm = TRUE),
-            std = sd(as.numeric(values), na.rm = TRUE))
+fig5a_chi <- chisq.test(fig5a_table)
 
-fig5a_aov <- aov(values ~ inst_type * adjusted_gender, data = fig5_gen_aov_data)
+fig5a_data <- fig3_data %>% 
+  filter(!is.na(apps_submitted_binned)) %>%
+  count(peer, apps_submitted_binned) %>% 
+  spread(key = apps_submitted_binned, value = n) %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(as.numeric(2:14)), na.rm = TRUE)) %>% 
+  gather(2:14, key = "apps_submitted_binned", value = "n") %>% 
+  mutate(n = replace_na(n, 0),
+         percent_peer = get_percent(n, total))
 
-fig5a_aov_summary <- summary(fig5a_aov)
+fig5a_plot_leg <- fig5a_data %>% 
+  ggplot(aes(x = factor(apps_submitted_binned, 
+                        levels = bin_levels_small), 
+             y = percent_peer,
+             fill = factor(peer, levels = peer_breaks)))+
+  geom_col(position = "dodge")+
+  scale_fill_manual(breaks = peer_breaks, values = peer_color)+
+  scale_y_continuous(expand = c(0,0))+
+  labs(x = "Number of applications submitted", 
+       y = "Percent of responses\nby PEER status",
+       fill = "PEER Status")+
+  my_theme_leg
 
-fig5a_tukey <- TukeyHSD(fig5_gen_aov)
+fig5a_plot <- fig5a_plot_leg+
+  my_theme
 
-#PUI:Woman-RI:Man
-#RI:Man-PUI:Man --
-#RI:Woman-PUI:Woman --
-#RI:Woman-PUI:Man --
+ggsave(filename = paste0("jadavji_biology/figures/fig5a_", Sys.Date(), ".jpeg"))
 
-fig5a_plot <- fig5_gen_aov_data %>% 
-  ggplot(aes(x = adjusted_gender, y = as.numeric(values),
-             fill = inst_type))+
-  geom_boxplot()+
-  geom_signif(annotations = "***", color = "gray62",
-              y_position = c(40, 40, 50, 60), 
-              xmin = c(.75, 2.75, .75, 1.25), 
-              xmax = c(1.25, 3.25, 3.25, 2.75))+
-  labs(x = "Gender (n=235)", y = "Number of applications submitted",
-       fill = "Institution type",
-       caption = "*** = p<0.001; ns = not significant")+
-  my_theme_leg_bottom_horiz
-
-ggsave("nafisa/figures/fig5a_pui-ri_gender_box.jpeg")
-
-#5b----
+#B. ----
 fig5b_plot <- fig5_data %>% 
   filter(!is.na(inst_type)) %>% 
-  filter(!is.na(adjusted_gender)) %>% 
-  select(id, adjusted_gender, inst_type_bin, values_binned) %>% 
+  filter(!is.na(peer)) %>% 
+  select(id, peer, inst_type_bin, values_binned) %>% 
   distinct() %>%
-  count(adjusted_gender, inst_type_bin, values_binned) %>% 
+  count(peer, inst_type_bin, values_binned) %>% 
   spread(key = values_binned, value = n) %>% 
   mutate(across(3:15, ~ replace_na(.x, replace = 0))) %>% 
   rowwise() %>% 
@@ -53,318 +48,163 @@ fig5b_plot <- fig5_data %>%
   gather(3:15, key = values_binned, value = percent) %>% 
   select(-total) %>% distinct() %>% 
   ggplot(aes(x = factor(values_binned, 
-                                 levels = bin_levels_small), 
-             y = percent, fill = adjusted_gender))+
+                        levels = bin_levels_small), 
+             y = percent, 
+             fill = factor(peer, levels = peer_breaks)))+
   geom_col(position = "dodge")+
-  coord_flip()+
+  scale_fill_manual(breaks = peer_breaks, values = peer_color)+
+  scale_y_continuous(expand = c(0,0), limits = c(0,60))+
   facet_wrap(~inst_type_bin)+
   labs(x = "Number of applications submitted", 
-       y = "Percent of gender (n=235)\n(grouped by institution type)",
-       fill = "Gender")+
-  my_theme_leg_bottom_horiz
+       y = "Percent of peer\n(grouped by institution type)",
+       fill = "peer")+
+  my_theme
 
-ggsave("nafisa/figures/fig5b_pui-ri_gender_spread.jpeg")
+ggsave(filename = paste0("jadavji_biology/figures/fig5b_", Sys.Date(), ".jpeg"))
 
-#5c----
-fig5_offer_aov_data <- fig5_data %>% 
-  filter(!is.na(faculty_offers)) %>% 
-  filter(!is.na(inst_type)) %>% 
-  select(id, faculty_offers, values, inst_type) %>% 
-  distinct()
+#C. CNS paper y/n----
+fig5c_gen_table <- table(fig4_data$CNS_status, fig4_data$peer)
 
-fig5c_aov <- aov(values ~ inst_type * faculty_offers, data = fig5_offer_aov_data)
+fig5c_chi <- chisq.test(fig5c_gen_table)
 
-fig5c_aov_summary <- summary(fig5c_aov)
-
-fig5c_tukey <- TukeyHSD(fig5_offer_aov)
-
-fig5c_plot <- fig5_offer_aov_data %>% 
-  select(id, inst_type, faculty_offers, values) %>% distinct() %>% 
-  ggplot(aes(x = faculty_offers, y= as.numeric(values), 
-             fill = inst_type))+
-  geom_boxplot()+
-  geom_signif(annotations = "***", color = "#00C19F",
-              y_position = c(65, 70), 
-              xmin = c(2.25, 1.25), 
-              xmax = c(3.25, 3.25))+
-  geom_signif(annotations = "***", color = "gray62",
-              y_position = c(77, 85, 55, 77, 45, 77, 85, 55), 
-              xmin = c(.75, 1.75, 2.75, .75, 2.25, 0.75, 1.75, 1.25), 
-              xmax = c(1.25, 2.25, 3.25, 2.25, 2.75, 3.25, 3.25, 2.75))+
-  geom_signif(annotations = "ns", color = "#F8766D",
-              y_position = c(30, 30), 
-              xmin = c(.75, 1.75), 
-              xmax = c(1.75, 2.75))+
-  geom_signif(annotations = "*", 
-              y_position = c(50), xmin = c(1.25), xmax = c(1.75))+
-  geom_signif(annotations = "ns", color = "#00C19F",
-              y_position = c(40), xmin = c(1.25), xmax = c(2.25))+
-  labs(y = "Applications submitted", x = "Number of faculty offers\n(n=232)",
-       fill = "Institution type",
-       caption = "*** = p<0.001; * = p<0.01; ns = not significant")+
-  my_theme_leg_bottom_horiz
-
-ggsave("nafisa/figures/fig5c_pui-ri_offers_box.jpeg")
-
-#5d----
-fig5d_plot <- fig5_data %>% 
-  filter(!is.na(inst_type)) %>% 
-  filter(!is.na(faculty_offers)) %>% 
-  select(id, values_binned, inst_type_bin, faculty_offers) %>% 
-  distinct() %>% 
-  ggplot(aes(x = factor(values_binned, 
-                        levels = bin_levels_small), 
-             fill = faculty_offers))+
-  geom_bar(position = "dodge")+
-  coord_flip()+
-  facet_wrap(~inst_type_bin)+
-  labs(x = "Applications submitted\n(grouped by institution type)", y = "Number of responses (n=232)",
-       fill = "Faculty offers")+
-  my_theme_leg_bottom_horiz
-
-ggsave("nafisa/figures/fig5d_pui-ri_offers_hist.jpeg")
-
-#Teaching experience
-#5e----
-teach_gen_chi <- fisher.test(table(fig5_data$adjusted_gender, 
-                                   fig5_data$teaching_type), 
-                             simulate.p.value = TRUE)
-
-teach_list <- fig5_data %>% 
-  filter(!is.na(teaching_type)) %>% 
-  filter(teaching_type != "Total adjunct positions") %>% 
-  pull(teaching_type) %>% unique()
-
-mult_teach_gen_chi <- map_df(teach_list, function(x){
-  
-  type_df <- map_df(teach_list, function(y){
-    
-    print(c(x, y))
-    
-    df <- fig5_data %>% 
-      filter(teaching_type %in% c(x, y)) %>% distinct()
-    
-    if(x != y){
-    
-    test <- fisher.test(table(df$adjusted_gender, df$teaching_type))
-    
-    p <- tibble(type1 = x, type2 = y, p = as.character(test[[1]]))
-    
-    }else{
-      p <- tibble(type1 = x, type2 = y, p = "N/A")
-    }
-    
-    return(p)
-  })
-  
-  return(type_df)
-})
-
-sig_teach_gen <- mult_teach_gen_chi %>% 
-  filter(p != "N/A") %>% 
-  filter(as.numeric(p) <= 0.05) %>% 
-  distinct(p, .keep_all = TRUE) %>% 
-  mutate(p = round(as.numeric(p), digits = 3))
-
-write_csv(sig_teach_gen, "nafisa/figures/5e_p-values_teaching_genders.csv")
-# men =50; women = 94
-fig5e_plot <- fig5_data %>% 
-  filter(!is.na(teaching_type)) %>% 
-  filter(adjusted_gender %in% c("Man", "Woman")) %>% 
-  filter(teaching_type != "Total adjunct positions") %>% 
-  select(id, adjusted_gender, teaching_type) %>% distinct() %>% 
-  count(adjusted_gender, teaching_type) %>% 
-  mutate(total = if_else(adjusted_gender == "Man", 50, 94),
-         percent = get_percent(n, total)) %>% 
-  ggplot(aes(x = teaching_type, y = percent,
-             fill = adjusted_gender))+
+fig5c_plot <- fig4_data %>% 
+  count(peer, CNS_status) %>% 
+  spread(key = CNS_status, value = n) %>% 
+  mutate(total = No + Yes,
+         percent = get_percent(Yes, total)) %>% 
+  ggplot(aes(x = factor(peer, levels = peer_breaks), y = percent,
+             fill = factor(peer, levels = peer_breaks)))+
   geom_col(position = "dodge")+
-  coord_flip() +
-  facet_grid(~adjusted_gender)+
-  labs(x = "Teaching type", y = "Percent of responses by gender* (n=144)",
-       fill = "Gender*",
-       caption = paste("Fisher's Exact Test p-value = ", 
-                       round(teach_gen_chi[[1]], digits = 5), 
-                       "\n*N too low to visualize Trans/NGC"))+
+  scale_fill_manual(breaks = peer_breaks, values = peer_color)+
+  scale_y_continuous(expand = c(0,0))+
+  labs(y = "Published in CNS (%)", x = '')+
   my_theme_horiz
 
-ggsave("nafisa/figures/fig5e_teach_gender.jpeg")
+ggsave(filename = paste0("jadavji_biology/figures/fig5c_", Sys.Date(), ".jpeg"))
 
-#offers vs no offers
-#5f----
-teach_offer_chi_yn <- fisher.test(table(fig5_data$faculty_yn, 
-                                   fig5_data$teaching_type), 
-                             simulate.p.value = TRUE)
+#D. Number of applications submitted ----
+fig5d_table <- table(fig3_data$faculty_offers, fig3_data$peer)
 
-mult_teach_offer_chi_yn <- map_df(teach_list, function(x){
-  
-  type_df <- map_df(teach_list, function(y){
-    
-    df <- fig5_data %>% 
-      filter(teaching_type == x | teaching_type == y) %>% distinct()
-    
-    if(x != y){
-      
-      print(c(x, y))
-      
-      test <- fisher.test(table(df$faculty_yn, df$teaching_type))
-      
-      p <- tibble(type1 = x, type2 = y, p = as.character(test[[1]]))
-      
-    }else{
-      p <- tibble(type1 = x, type2 = y, p = "N/A")
-    }
-    
-    return(p)
-  })
-  
-  return(type_df)
-})
+fig5d_chi <- chisq.test(fig5d_table)
 
-sig_teach_offer_yn <- mult_teach_offer_chi_yn %>% 
-  filter(p != "N/A") %>% 
-  filter(as.numeric(p) <= 0.05) %>% 
-  distinct(p, .keep_all = TRUE) %>% 
-  mutate(p = round(as.numeric(p), digits = 3))
+fig5d_data <- fig3_data %>% 
+  filter(!is.na(faculty_offers)) %>%
+  count(peer, faculty_offers) %>% 
+  spread(key = faculty_offers, value = n) %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(as.numeric(2:4)), na.rm = TRUE)) %>% 
+  gather(2:4, key = "faculty_offers", value = "n") %>% 
+  mutate(n = replace_na(n, 0),
+         percent_peer = get_percent(n, total),
+         faculty_offers = factor(faculty_offers,
+                                 levels = c("0", "1", ">1")))
 
-write_csv(sig_teach_offer_yn, "nafisa/figures/fig5f_p-values_teaching_yes_vs_no_offers.csv")
+fig5d_plot <- fig5d_data %>% 
+  ggplot(aes(x = faculty_offers, 
+             y = percent_peer,
+             fill = factor(peer, levels = peer_breaks)))+
+  geom_col(position = "dodge")+
+  scale_fill_manual(breaks = peer_breaks, values = peer_color)+
+  scale_y_continuous(expand = c(0,0), limits = c(0,55))+
+  labs(x = "Number of faculty offers", 
+       y = "Percent of responses\nby PEER status")+
+  my_theme
 
-#one offer vs multiple offers
-teach_offer_chi <- fisher.test(table(fig5_data$faculty_offers, 
-                                     fig5_data$teaching_type), 
-                               simulate.p.value = TRUE)
+ggsave(filename = paste0("jadavji_biology/figures/fig5d_", Sys.Date(), ".jpeg"))
 
-offer_teach_list <- c("Teaching assistant", "Grad guest lecturer",                
-                      "Undergrad co-instructor", "Guest lecturer",                     
-                      "Lecturing for Workshops", "Teaching certificate",               
-                      "Undergrad guest lecturer", "Lab Course Instructor",              
-                      "Undergrad instructor", "High school instructor",             
-                      "Undergrad adjunct, community or PUI",
-                      "Grad instructor", "Co-instructor/lecturer",             
-                      "Grad co-instructor", "Independent instructor",             
-                      "Visiting assistant professor")
+#E. ----
+fig5e_table <- table(fig3_data$on_site_interviews, fig3_data$peer)
 
-mult_teach_offer_chi <- map_df(offer_teach_list, function(x){
-  
-  type_df <- map_df(offer_teach_list, function(y){
-    
-    df <- fig5_data %>% 
-      filter(faculty_offers != "0") %>% 
-      filter(teaching_type == x | teaching_type == y) %>% distinct()
-    
-    if(x != y){
-      
-      print(c(x, y))
-      
-      test <- fisher.test(table(df$faculty_offers, df$teaching_type))
-      
-      p <- tibble(type1 = x, type2 = y, p = as.character(test[[1]]))
-      
-    }else{
-      p <- tibble(type1 = x, type2 = y, p = "N/A")
-    }
-    
-    return(p)
-  })
-  
-  return(type_df)
-})
+fig5e_chi <- chisq.test(fig5e_table)
 
-sig_teach_offer_mult <- mult_teach_offer_chi %>% 
-  filter(p != "N/A") %>% 
-  filter(as.numeric(p) <= 0.05) %>% 
-  distinct(p, .keep_all = TRUE) %>% 
-  mutate(p = round(as.numeric(p), digits = 3))
+fig5e_data <- fig3_data %>% 
+  filter(!is.na(on_site_interviews)) %>%
+  count(peer, on_site_interviews) %>% 
+  spread(key = on_site_interviews, value = n) %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(as.numeric(2:20)), na.rm = TRUE)) %>% 
+  gather(2:20, key = "on_site_interviews", value = "n") %>% 
+  mutate(n = replace_na(n, 0),
+         percent_peer = get_percent(n, total))
 
-write_csv(sig_teach_offer_mult, "nafisa/figures/fig5f_p-values_teaching_1_vs_mult_offers.csv")
+fig5e_plot <- fig5e_data %>% 
+  ggplot(aes(x = as.numeric(on_site_interviews), 
+             y = percent_peer,
+             fill = factor(peer, levels = peer_breaks)))+
+  geom_col()+
+  facet_wrap(~factor(peer, levels = peer_breaks))+
+  scale_fill_manual(breaks = peer_breaks, values = peer_color)+
+  scale_y_continuous(expand = c(0,0), limits = c(0,40))+
+  labs(x = "Number of on-site interviews", 
+       y = "Percent of responses\nby PEER status")+
+  my_theme
 
-fig5f_plot <- fig5_data %>% 
-  filter(!is.na(teaching_type)) %>% 
-  filter(!is.na(faculty_offers)) %>% 
-  filter(teaching_type != "Total adjunct positions") %>%
-  ggplot(aes(x = teaching_type, fill = faculty_offers))+
-  geom_bar()+
-  coord_flip()+
-  facet_grid(~faculty_offers)+
-  labs(x = "Teaching type", y = "Number of responses (n=130)",
-       caption = paste("Fisher's Exact Test p-value = ", round(teach_offer_chi[[1]], digits = 5))
-       )+
+ggsave(filename = paste0("jadavji_biology/figures/fig5e_", Sys.Date(), ".jpeg"))
+
+#F. 1st author CNS y/n----
+fig5f_table <- table(fig4_data$CNS_first_author, fig4_data$peer)
+
+fig5f_chi <- chisq.test(fig5f_table)
+
+fig5f_plot <- fig4_data %>% 
+  count(peer, CNS_first_author) %>% 
+  spread(key = CNS_first_author, value = n) %>% 
+  mutate(`2` = if_else(is.na(`2`), 0, as.numeric(`2`)),
+         total = `0`+`1`+`2`,
+         `0` = get_percent(`0`, total),
+         `1` = get_percent(`1`, total),
+         `2` = get_percent(`2`, total)) %>% 
+  gather(2:4, key = CNS_first_author, value = percent) %>% 
+  ggplot(aes(x = CNS_first_author, y = percent,
+             fill = factor(peer, levels = peer_breaks)))+
+  geom_col(position = "dodge")+
+  facet_wrap(~factor(peer, levels = peer_breaks))+
+  scale_fill_manual(breaks = peer_breaks, values = peer_color)+
+  scale_y_continuous(expand = c(0,0), limits = c(0,85))+
+  labs(x = "Number of first-author CNS papers", 
+       y = "Percent by PEER Status")+
   my_theme_horiz
 
-ggsave("nafisa/figures/fig5f_teach_offers.jpeg")
+ggsave(filename = paste0("jadavji_biology/figures/fig5f_", Sys.Date(), ".jpeg"))
 
-#compile stats----
+#compile chi stats (a,d,e)----
+chi_list <- c("fig5a_chi", "fig5d_chi", 
+              "fig5e_chi", "fig5f_chi")
 
-aov_list <- c("fig5a_aov_summary", "fig5c_aov_summary")
+plot_list <- c('5A', '5D', '5E', '5F')
 
-plot_list <- c('5A', '5C')
+fig5_chi_tbl_raw <- map2_df(chi_list, plot_list, get_wilcox_tbl) 
 
-fig5_aov_tbl_raw <- map2_df(aov_list, plot_list, get_wilcox_tbl) 
+fig5_chi_tbl <- fig5_chi_tbl_raw %>% 
+  spread(key = attribute, value = value) %>% 
+  select(figure, method, `statistic.X-squared`, p.value, parameter.df)
 
-fig5_aov_tbl <- fig5_aov_tbl_raw %>% 
-  mutate(compare = case_when(
-    str_detect(attribute, "1") ~ "inst_type",
-    str_detect(attribute, "2") ~ "adjusted_gender",
-    str_detect(attribute, "3") ~ "inst_type:adjusted_gender",
-    str_detect(attribute, "4") ~ "Residuals",
-  ),
-  attribute = str_remove_all(attribute, "[[:digit:]]")) %>% 
-  spread(key = attribute, value = value) 
-
-write_csv(fig5_aov_tbl, "nafisa/figures/fig5ac_aov_stats.csv")
-
-#5a tukey
-fig5a_t1 <-fig5a_tukey[[1]] %>% as_tibble(rownames = "comparison") %>% 
-  mutate(variables = "institution type",
-         figure = "5A")
-
-fig5a_t2 <-fig5a_tukey[[2]] %>% as_tibble(rownames = "comparison") %>% 
-  mutate(variables = "gender", 
-         figure = "5A")
-
-fig5a_t3 <-fig5a_tukey[[3]] %>% as_tibble(rownames = "comparison") %>% 
-  mutate(variables = "institution type: gender", 
-         figure = "5A")
-
-#5c tukey
-fig5c_t1 <-fig5c_tukey[[1]] %>% as_tibble(rownames = "comparison") %>% 
-  mutate(variables = "institution type",
-         figure = "5C")
-
-fig5c_t2 <-fig5c_tukey[[2]] %>% as_tibble(rownames = "comparison") %>% 
-  mutate(variables = "faculty offers",
-         figure = "5C")
-
-fig5c_t3 <-fig5c_tukey[[3]] %>% as_tibble(rownames = "comparison") %>% 
-  mutate(variables = "institution type:faculty offers",
-         figure = "5C")
-
-fig5_tukey_data <- rbind(fig5a_t1, fig5a_t2, fig5a_t3,
-                         fig5c_t1, fig5c_t2, fig5c_t3) %>% 
-  mutate(method = "Tukey multiple comparisons of means", 
-         confidence = "95") %>% 
-  rename("difference in observed means" = diff, 
-         "lower end point of the interval" = lwr, 
-         "upper end point of the interval" = upr, 
-         "adjusted p-value" = `p adj`)
-write_csv(fig5_tukey_data, "nafisa/figures/fig5ac_tukey_stats.csv")
+write_csv(fig5_chi_tbl, file = paste0("jadavji_biology/figures/fig5adef_chi_stats", 
+                                      Sys.Date(),".csv"))
 
 #generate plot----
+fig5_leg <- get_legend_plot(fig5a_plot_leg)
+
+ggsave("jadavji_biology/figures/fig5_legend.jpeg")
+
 Fig5ab <- plot_grid(fig5a_plot, fig5b_plot, 
                     labels = c('A', 'B'),
+                    rel_widths = c(.8, 1),
                     label_size = 18, nrow = 1)
 
-Fig5cd <- plot_grid(fig5c_plot, fig5d_plot,
-                    labels = c('C', 'D'),
+Fig5cd <- plot_grid(fig5c_plot, fig5d_plot, fig5_leg,
+                    labels = c('C', 'D', ''),
+                    rel_widths = c(1, 1, .5),
                     label_size = 18, nrow = 1)
+
 
 Fig5ef <- plot_grid(fig5e_plot, fig5f_plot,
                     labels = c('E', 'F'),
-                    label_size = 18, nrow = 2)
+                    label_size = 18, nrow = 1)
 
-Fig5 <- plot_grid(Fig5ab, Fig5cd, Fig5ef, ncol = 1,
-                  rel_heights = c(.75, .75, 1))
+Fig5 <- plot_grid(Fig5ab, Fig5cd, Fig5ef, nrow = 3)
 
 
-ggsave("Figure_5.png", device = 'png', units = "in", scale = 1.75,
-       path = 'nafisa/figures/', width = 8, height = 14)
+ggsave(filename = paste0("Figure_5_", Sys.Date(), ".png"), 
+       device = 'png', units = "in", scale = 1.75,
+       path = 'jadavji_biology/figures/', width = 8, height = 8)

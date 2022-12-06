@@ -1,52 +1,154 @@
 #Figure 4. Traditional measures of success by gender & offers
 
-#CNS paper y/n
+#A. ----
+fig4a_table <- table(fig3_data$apps_submitted, fig3_data$adjusted_gender)
 
-#4a----
-fig4a_gen_table <- table(fig4_data$CNS_status, fig4_data$adjusted_gender)
+fig4a_chi <- chisq.test(fig4a_table)
 
-fig4a_chi <- chisq.test(fig4a_gen_table)
+fig4a_data <- fig3_data %>% 
+  filter(!is.na(apps_submitted_binned)) %>%
+  count(adjusted_gender, apps_submitted_binned) %>% 
+  spread(key = apps_submitted_binned, value = n) %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(as.numeric(2:14)), na.rm = TRUE)) %>% 
+  gather(2:14, key = "apps_submitted_binned", value = "n") %>% 
+  mutate(n = replace_na(n, 0),
+         percent_gender = get_percent(n, total))
 
-fig4a_plot <- fig4_data %>% 
+fig4a_plot_leg <- fig4a_data %>% 
+  ggplot(aes(x = factor(apps_submitted_binned, 
+                        levels = bin_levels_small), 
+             y = percent_gender,
+             fill = factor(adjusted_gender, levels = gender_breaks)))+
+  geom_col(position = "dodge")+
+  scale_fill_manual(breaks = gender_breaks, values = gender_color)+
+  scale_y_continuous(expand = c(0,0))+
+  labs(x = "Number of applications submitted", 
+       y = "Percent of responses\nby gender",
+       fill = "Gender")+
+  my_theme_leg
+
+fig4a_plot <- fig4a_plot_leg+
+  my_theme
+
+ggsave(filename = paste0("jadavji_biology/figures/fig4a_", Sys.Date(), ".jpeg"))
+
+#B. ----
+fig4b_plot <- fig5_data %>% 
+  filter(!is.na(inst_type)) %>% 
+  filter(!is.na(adjusted_gender)) %>% 
+  select(id, adjusted_gender, inst_type_bin, values_binned) %>% 
+  distinct() %>%
+  count(adjusted_gender, inst_type_bin, values_binned) %>% 
+  spread(key = values_binned, value = n) %>% 
+  mutate(across(3:15, ~ replace_na(.x, replace = 0))) %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(as.numeric(3:15)), na.rm = TRUE),
+         across(3:15, ~ get_percent(.x, total))) %>% 
+  gather(3:15, key = values_binned, value = percent) %>% 
+  select(-total) %>% distinct() %>% 
+  ggplot(aes(x = factor(values_binned, 
+                        levels = bin_levels_small), 
+             y = percent, 
+             fill = factor(adjusted_gender, levels = gender_breaks)))+
+  geom_col(position = "dodge")+
+  scale_fill_manual(breaks = gender_breaks, values = gender_color)+
+  scale_y_continuous(expand = c(0,0))+
+  facet_wrap(~inst_type_bin)+
+  labs(x = "Number of applications submitted", 
+       y = "Percent of gender\n(grouped by institution type)",
+       fill = "Gender")+
+  my_theme
+
+ggsave(filename = paste0("jadavji_biology/figures/fig4b_", Sys.Date(), ".jpeg"))
+
+#C. CNS paper y/n----
+fig4c_gen_table <- table(fig4_data$CNS_status, fig4_data$adjusted_gender)
+
+fig4c_chi <- chisq.test(fig4c_gen_table)
+
+fig4c_plot <- fig4_data %>% 
   count(adjusted_gender, CNS_status) %>% 
   spread(key = CNS_status, value = n) %>% 
   mutate(total = No + Yes,
          percent = get_percent(Yes, total)) %>% 
-  ggplot(aes(x = adjusted_gender, y = percent))+
+  ggplot(aes(x = factor(adjusted_gender, levels = gender_breaks), y = percent,
+             fill = factor(adjusted_gender, levels = gender_breaks)))+
   geom_col(position = "dodge")+
-  #facet_wrap(~gender, scales = "free")+
-  labs(y = "Published in CNS (%)\n(n=156)", x = '',
-       caption = "Pearson's Chi-squared test: ns")+
+  scale_fill_manual(breaks = gender_breaks, values = gender_color)+
+  scale_y_continuous(expand = c(0,0))+
+  labs(y = "Published in CNS (%)", x = '')+
   my_theme_horiz
 
-ggsave("nafisa/figures/fig4a_cns_gender.jpeg")
+ggsave(filename = paste0("jadavji_biology/figures/fig4c_", Sys.Date(), ".jpeg"))
 
-#4b----
-fig4b_off_table <- table(fig4_data$CNS_status, fig4_data$faculty_offers)
+#D. Number of applications submitted ----
+fig4d_table <- table(fig3_data$faculty_offers, fig3_data$adjusted_gender)
 
-fig4b_chi <- chisq.test(fig4b_off_table)
+fig4d_chi <- chisq.test(fig4d_table)
 
-fig4b_plot <- fig4_data %>% 
+fig4d_data <- fig3_data %>% 
+  filter(!is.na(faculty_offers)) %>%
+  count(adjusted_gender, faculty_offers) %>% 
+  spread(key = faculty_offers, value = n) %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(as.numeric(2:4)), na.rm = TRUE)) %>% 
+  gather(2:4, key = "faculty_offers", value = "n") %>% 
+  mutate(n = replace_na(n, 0),
+         percent_gender = get_percent(n, total),
+         faculty_offers = factor(faculty_offers,
+                                 levels = c("0", "1", ">1")))
+
+fig4d_plot <- fig4d_data %>% 
+  ggplot(aes(x = faculty_offers, 
+             y = percent_gender,
+             fill = factor(adjusted_gender, levels = gender_breaks)))+
+  geom_col(position = "dodge")+
+  scale_fill_manual(breaks = gender_breaks, values = gender_color)+
+  scale_y_continuous(expand = c(0,0))+
+  labs(x = "Number of faculty offers", 
+       y = "Percent of responses\nby gender")+
+  my_theme
+
+ggsave(filename = paste0("jadavji_biology/figures/fig4d_", Sys.Date(), ".jpeg"))
+
+#E. ----
+fig4e_table <- table(fig3_data$on_site_interviews, fig3_data$adjusted_gender)
+
+fig4e_chi <- chisq.test(fig4e_table)
+
+fig4e_data <- fig3_data %>% 
+  filter(!is.na(on_site_interviews)) %>%
+  count(adjusted_gender, on_site_interviews) %>% 
+  spread(key = on_site_interviews, value = n) %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(as.numeric(2:20)), na.rm = TRUE)) %>% 
+  gather(2:20, key = "on_site_interviews", value = "n") %>% 
+  mutate(n = replace_na(n, 0),
+         percent_gender = get_percent(n, total))
+
+fig4e_plot <- fig4e_data %>% 
+  ggplot(aes(x = as.numeric(on_site_interviews), 
+             y = percent_gender,
+             fill = factor(adjusted_gender, levels = gender_breaks)))+
+  geom_col()+
+  facet_wrap(~factor(adjusted_gender, levels = gender_breaks))+
+  scale_fill_manual(breaks = gender_breaks, values = gender_color)+
+  scale_y_continuous(expand = c(0,0), limits = c(0,50))+
+  labs(x = "Number of on-site interviews", 
+       y = "Percent of responses\nby gender")+
+  my_theme
+
+ggsave(filename = paste0("jadavji_biology/figures/fig4e_", Sys.Date(), ".jpeg"))
+
+#F. 1st author CNS y/n----
+fig4f_table <- table(fig4_data$CNS_first_author, fig4_data$adjusted_gender)
+
+fig4f_chi <- chisq.test(fig4f_table)
+
+fig4f_plot <- fig4_data %>% 
   filter(!is.na(faculty_offers)) %>% 
-  ggplot(aes(x = CNS_status))+
-  geom_bar(position = "dodge")+
-  facet_wrap(~faculty_offers)+
-  labs(x = "Published in CNS\n(grouped by faculty offers)",
-       y = "Number of responses\n(n=126)",
-       caption = "Pearson's Chi-squared test: ns")+
-  my_theme_horiz
-
-ggsave("nafisa/figures/fig4b_cns_offers.jpeg")
-
-#1st author CNS y/n
-#4c----
-fig4c_table <- table(fig4_data$CNS_status, fig4_data$adjusted_gender)
-
-fig4c_chi <- chisq.test(fig4c_table)
-
-fig4c_plot <- fig4_data %>% 
-  filter(!is.na(faculty_offers)) %>% 
-  filter(adjusted_gender %in% c("Woman", "Man")) %>% 
+  #filter(adjusted_gender %in% c("Woman", "Man")) %>% 
   #mutate(CNS_first_author = replace_na(CNS_first_author, "0")) %>%
   count(adjusted_gender, CNS_first_author) %>% 
   spread(key = CNS_first_author, value = n) %>% 
@@ -55,63 +157,56 @@ fig4c_plot <- fig4_data %>%
          `1` = get_percent(`1`, total),
          `2` = get_percent(`2`, total)) %>% 
   gather(2:4, key = CNS_first_author, value = percent) %>% 
-  ggplot(aes(x = CNS_first_author, y = percent))+
+  ggplot(aes(x = CNS_first_author, y = percent,
+             fill = factor(adjusted_gender, levels = gender_breaks)))+
   geom_col(position = "dodge")+
-  facet_wrap(~adjusted_gender)+
-  labs(x = "Number of first-author CNS papers", y = "Percent of gender*\n(n=36)",
-       caption = "Pearson's Chi-squared test: ns\n*N of Trans/GNC too low to visualize")+
+  facet_wrap(~factor(adjusted_gender, levels = gender_breaks))+
+  scale_fill_manual(breaks = gender_breaks, values = gender_color)+
+  scale_y_continuous(expand = c(0,0), limits = c(0,90))+
+  labs(x = "Number of first-author CNS papers", 
+       y = "Percent of gender")+
   my_theme_horiz
 
-ggsave("nafisa/figures/fig4c_cns_1st_gender.jpeg")
+ggsave(filename = paste0("jadavji_biology/figures/fig4f_", Sys.Date(), ".jpeg"))
 
-#4d----
-fig4d_kwh <- kruskal.test(as.numeric(CNS_first_author) ~ faculty_offers, data = fig4_data)
+#compile chi stats (a,d,e)----
+chi_list <- c("fig4a_chi", "fig4d_chi", 
+              "fig4e_chi", "fig4f_chi")
 
-fig4d_plot <- fig4_data %>% 
-  filter(!is.na(faculty_offers)) %>%
-  ggplot(aes(x = CNS_first_author))+
-  geom_bar(position = "dodge")+
-  facet_wrap(~faculty_offers)+
-  labs(x = "Number of first-author CNS papers\n(grouped by faculty offers)", y = "Number of responses\n(n=126)",
-       caption = "Kruskal-Wallis rank sum test: ns")+
-  my_theme_horiz
+plot_list <- c('4A', '4D', '4E', '4F')
 
-ggsave("nafisa/figures/fig4d_cns_1st_offers.jpeg")
+fig4_chi_tbl_raw <- map2_df(chi_list, plot_list, get_wilcox_tbl) 
 
-#compile stats----
-
-chi_stats_list <- c("fig4a_chi", "fig4b_chi", "fig4c_chi")
-
-plot_list <- c('4A', '4B', '4C')
-
-fig4_chi_stats_tbl_raw <- map2_df(chi_stats_list, plot_list, get_wilcox_tbl) 
-
-fig4_chi_stats_tbl <- fig4_chi_stats_tbl_raw %>% 
+fig4_chi_tbl <- fig4_chi_tbl_raw %>% 
   spread(key = attribute, value = value) %>% 
-  select(figure, method, `statistic.X-squared`, p.value)
+  select(figure, method, `statistic.X-squared`, p.value, parameter.df)
 
-write_csv(fig4_chi_stats_tbl, "nafisa/figures/Fig4_Chi-sq_stats.csv")
-
-#kw
-
-fig4_kw_stats_tbl <- get_wilcox_tbl("fig4d_kwh", '4D') %>% 
-  spread(key = attribute, value = value) %>% 
-  select(-data.name)
-
-write_csv(fig4_kw_stats_tbl, "nafisa/figures/Fig4_Kruskal-Wallis_stats.csv")
+write_csv(fig4_chi_tbl, file = paste0("jadavji_biology/figures/fig4adef_chi_stats", 
+                                      Sys.Date(),".csv"))
 
 #generate plot----
+fig4_leg <- get_legend_plot(fig4a_plot_leg)
+
+ggsave("jadavji_biology/figures/fig4_legend.jpeg")
+
 Fig4ab <- plot_grid(fig4a_plot, fig4b_plot, 
                     labels = c('A', 'B'),
-                    #rel_widths = c(.75, 1),
+                    rel_widths = c(.8, 1),
                     label_size = 18, nrow = 1)
 
-Fig4cd <- plot_grid(fig4c_plot, fig4d_plot,
-                    labels = c('C', 'D'),
+Fig4cd <- plot_grid(fig4c_plot, fig4d_plot, fig4_leg,
+                    labels = c('C', 'D', ''),
+                    rel_widths = c(1, 1, .5),
                     label_size = 18, nrow = 1)
 
-Fig4 <- plot_grid(Fig4ab, Fig4cd, nrow = 2)
+
+Fig4ef <- plot_grid(fig4e_plot, fig4f_plot,
+                    labels = c('E', 'F'),
+                    label_size = 18, nrow = 1)
+
+Fig4 <- plot_grid(Fig4ab, Fig4cd, Fig4ef, nrow = 3)
 
 
-ggsave("Figure_4.png", device = 'png', units = "in", scale = 1.75,
-       path = 'nafisa/figures/', width = 6, height = 4)
+ggsave(filename = paste0("Figure_4_", Sys.Date(), ".png"), 
+       device = 'png', units = "in", scale = 1.75,
+       path = 'jadavji_biology/figures/', width = 8, height = 8)
