@@ -147,7 +147,7 @@ fig4f_table <- table(fig4_data$CNS_first_author, fig4_data$adjusted_gender)
 fig4f_chi <- chisq.test(fig4f_table)
 
 fig4f_plot <- fig4_data %>% 
-  filter(!is.na(faculty_offers)) %>% 
+  filter(!is.na(faculty_offers)) %>%
   #filter(adjusted_gender %in% c("Woman", "Man")) %>% 
   #mutate(CNS_first_author = replace_na(CNS_first_author, "0")) %>%
   count(adjusted_gender, CNS_first_author) %>% 

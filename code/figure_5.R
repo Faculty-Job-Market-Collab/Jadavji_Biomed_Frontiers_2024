@@ -38,7 +38,7 @@ fig5b_plot <- fig5_data %>%
   filter(!is.na(inst_type)) %>% 
   filter(!is.na(peer)) %>% 
   select(id, peer, inst_type_bin, values_binned) %>% 
-  distinct() %>%
+  distinct() %>% 
   count(peer, inst_type_bin, values_binned) %>% 
   spread(key = values_binned, value = n) %>% 
   mutate(across(3:15, ~ replace_na(.x, replace = 0))) %>% 
@@ -88,7 +88,7 @@ fig5d_table <- table(fig3_data$faculty_offers, fig3_data$peer)
 fig5d_chi <- chisq.test(fig5d_table)
 
 fig5d_data <- fig3_data %>% 
-  filter(!is.na(faculty_offers)) %>%
+  filter(!is.na(faculty_offers)) %>% 
   count(peer, faculty_offers) %>% 
   spread(key = faculty_offers, value = n) %>% 
   rowwise() %>% 
@@ -147,6 +147,7 @@ fig5f_table <- table(fig4_data$CNS_first_author, fig4_data$peer)
 fig5f_chi <- chisq.test(fig5f_table)
 
 fig5f_plot <- fig4_data %>% 
+  filter(!is.na(faculty_offers)) %>%
   count(peer, CNS_first_author) %>% 
   spread(key = CNS_first_author, value = n) %>% 
   mutate(`2` = if_else(is.na(`2`), 0, as.numeric(`2`)),
