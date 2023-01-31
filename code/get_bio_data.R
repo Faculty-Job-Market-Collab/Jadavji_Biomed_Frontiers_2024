@@ -1,5 +1,5 @@
 #load data, functions, and packages
-source("code/load_data.R")
+#source("code/load_data.R")
 
 library(ggsignif)
 
@@ -8,17 +8,51 @@ bio_ids <- demo_data %>%
   filter(response == "Biological Sciences") %>% 
   distinct() %>% select(id)
 
-bio_tidy_data <- left_join(bio_ids, tidy_data, by = 'id') 
+bio_clean <- left_join(bio_ids, clean_data, by = 'id') %>% distinct() 
+
+# Identify outliers
+metric_quals <- c("peer-reviewed_papers", "conference_abstracts", 
+                  "corresponding_author", "first_author",
+                  "scholar_citations_all", "scholar_hindex",
+                  "apps_submitted")
+
+metric_outliers <- map_dfr(.x = metric_quals, function(x) get_mad_outliers("bio_clean", x))
+
+bio_tidy_data <- left_join(bio_ids, tidy_data, by = 'id') %>% 
+  mutate(outlier = case_when(
+    question == "peer-reviewed_papers" & as.numeric(response) > 33 ~ "yes",
+    question == "conference_abstracts" & as.numeric(response) > 45 ~ "yes",
+    question == "corresponding_author" & as.numeric(response) > 10 ~ "yes",
+    question == "first_author" & as.numeric(response) > 15 ~ "yes",
+    question == "scholar_citations_all" & as.numeric(response) > 2199 ~ "yes",
+    question == "scholar_hindex" & as.numeric(response) > 19 ~ "yes",
+    question == "apps_submitted" & as.numeric(response) > 91 ~ "yes",
+    TRUE ~ "no"
+  )) %>% 
+  filter(outlier == "no") %>% 
+  select(-outlier)
+
+write_csv(bio_tidy_data, "jadavji_biology/data/bio_tidy_data.csv")
 
 #Figure 1.----
 bio_demo_data <- left_join(bio_ids, demo_data, by = 'id') %>% distinct()
 
 bio_network_data <- left_join(bio_ids, network_data, by = 'id') %>% distinct()
 
-bio_qualifications <- left_join(bio_ids, qualifications, by = 'id') %>% distinct() %>% 
-  mutate(postdoc_fellow = if_else(str_detect(grants_awarded, "Postdoctoral"), "Yes", "No"))
+bio_qualifications <- bio_qualifications %>% 
+  mutate(postdoc_fellow = if_else(str_detect(grants_awarded, "Postdoctoral"), 
+                                  "Yes", "No")) %>% 
+  mutate(paper_outliers = if_else(as.numeric(`peer-reviewed_papers`) > 33, "yes", "no"),
+         abstract_outliers = if_else(as.numeric(conference_abstracts) > 45, "yes", "no"),
+         corres_outliers = if_else(as.numeric(corresponding_author) > 10, "yes", "no"),
+         first_outliers = if_else(as.numeric(first_author) > 15, "yes", "no"),
+         cites_outliers = if_else(as.numeric(scholar_citations_all) > 2199, "yes", "no"),
+         hindex_outliers = if_else(as.numeric(scholar_hindex) > 19, "yes", "no"))
 
-bio_qualif_data <- left_join(bio_ids, qualif_data, by = 'id') %>% distinct()
+bio_qualif_data <- bio_tidy_data %>% 
+  filter(section == "qualifications") %>% 
+  select(1:3) %>% 
+  distinct()
 
 bio_app_outcomes <- left_join(bio_ids, app_outcomes, by = 'id') %>% distinct()
 
@@ -139,7 +173,7 @@ demo_table <- bio_demo_data %>%
   count(question, response) %>% 
   mutate(percent_total = get_percent(n, 332))
 
-#write_csv(demo_table, "jadavji_biology/figures/demographics.csv")
+write_csv(demo_table, "jadavji_biology/figures/demographics.csv")
 
 #table of application metrics
 metrics_table <- bio_tidy_data %>% 
@@ -161,7 +195,7 @@ metrics_table <- bio_tidy_data %>%
   mutate(range = paste0("(", min_val, ", ", max_val, ")")) %>% 
   select(-min_val, -max_val)
 
-#write_csv(metrics_table, "jadavji_biology/figures/metrics.csv")
+write_csv(metrics_table, "jadavji_biology/figures/metrics.csv")
 
 metrics_table2 <- bio_tidy_data %>% 
   select(id, question, response) %>% 
@@ -172,4 +206,4 @@ metrics_table2 <- bio_tidy_data %>%
   count(question, response) %>% 
   mutate(percent = get_percent(n, 332))
 
-#write_csv(metrics_table2, "jadavji_biology/figures/grants.csv")
+write_csv(metrics_table2, "jadavji_biology/figures/grants.csv")

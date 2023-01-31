@@ -14,7 +14,8 @@ fig3a_plot <- fig3_data %>%
        y = "% Respondents\n(by number of faculty offers)")+
   my_theme
 
-ggsave(filename = paste0("jadavji_biology/figures/fig3a_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig3a_", Sys.Date(), ".jpeg"),
+       width = 11, height = 5.5)
 
 #B. Onsite interviews----
 fig3b_plot <- fig3_data %>% 

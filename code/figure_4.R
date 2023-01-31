@@ -10,8 +10,8 @@ fig4a_data <- fig3_data %>%
   count(adjusted_gender, apps_submitted_binned) %>% 
   spread(key = apps_submitted_binned, value = n) %>% 
   rowwise() %>% 
-  mutate(total = sum(c_across(as.numeric(2:14)), na.rm = TRUE)) %>% 
-  gather(2:14, key = "apps_submitted_binned", value = "n") %>% 
+  mutate(total = sum(c_across(as.numeric(2:13)), na.rm = TRUE)) %>% 
+  gather(2:13, key = "apps_submitted_binned", value = "n") %>% 
   mutate(n = replace_na(n, 0),
          percent_gender = get_percent(n, total))
 
@@ -170,10 +170,11 @@ fig4f_plot <- fig4_data %>%
 ggsave(filename = paste0("jadavji_biology/figures/fig4f_", Sys.Date(), ".jpeg"))
 
 #compile chi stats (a,d,e)----
-chi_list <- c("fig4a_chi", "fig4d_chi", 
+chi_list <- c("fig4a_chi", 
+              "fig4c_chi", "fig4d_chi", 
               "fig4e_chi", "fig4f_chi")
 
-plot_list <- c('4A', '4D', '4E', '4F')
+plot_list <- c('4A', '4C', '4D', '4E', '4F')
 
 fig4_chi_tbl_raw <- map2_df(chi_list, plot_list, get_wilcox_tbl) 
 

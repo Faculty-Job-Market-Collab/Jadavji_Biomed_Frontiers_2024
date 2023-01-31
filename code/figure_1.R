@@ -4,10 +4,10 @@
 fig1a_plot <- bio_qualif_data %>% 
   filter(question == "first_author") %>% 
   filter(!is.na(response)) %>% 
-  distinct() %>%count(response) %>% 
-  mutate(percent = get_percent(n, 164)) %>% 
-  ggplot(aes(x=fct_inseq(response), 
-             y=percent))+
+  distinct() %>% count(response) %>% 
+  mutate(percent = get_percent(n, 164),
+         response = as.numeric(response)) %>% 
+  ggplot(aes(x=response, y=percent))+
   geom_col(position = "dodge")+
   scale_y_continuous(expand = c(0,0))+ #ensure bars directly abut axis, no padding
   labs(y="Respondents (%)")+
@@ -20,9 +20,9 @@ ggsave(filename = paste0("jadavji_biology/figures/fig1a_", Sys.Date(), ".jpeg"))
 fig1b_plot <- bio_qualif_data %>% 
   filter(question == "peer-reviewed_papers") %>% 
   distinct() %>% count(response) %>% 
-  mutate(percent = get_percent(n, 164)) %>% 
-  ggplot(aes(x=fct_inseq(response), 
-             y=percent))+
+  mutate(percent = get_percent(n, 164),
+         response = as.numeric(response)) %>% 
+  ggplot(aes(x=response, y=percent))+
   geom_col(position = "dodge")+
   scale_y_continuous(expand = c(0,0))+ #ensure bars directly abut axis, no padding
   labs(y="Respondents (%)", x="Number of papers")+
@@ -55,7 +55,7 @@ fig1d_plot <- bio_qualif_data %>%
   ggplot(aes(x=as.numeric(response), y = percent))+
   geom_col()+
   scale_y_continuous(expand = c(0,0))+
-  scale_x_continuous(limits = c(0,30))+
+  scale_x_continuous(limits = c(0,20))+
   labs(y="Respondents (%)", x="Google Scholar H-index")+
   my_theme_horiz
 

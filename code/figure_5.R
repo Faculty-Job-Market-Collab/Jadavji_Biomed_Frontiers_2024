@@ -10,8 +10,8 @@ fig5a_data <- fig3_data %>%
   count(peer, apps_submitted_binned) %>% 
   spread(key = apps_submitted_binned, value = n) %>% 
   rowwise() %>% 
-  mutate(total = sum(c_across(as.numeric(2:14)), na.rm = TRUE)) %>% 
-  gather(2:14, key = "apps_submitted_binned", value = "n") %>% 
+  mutate(total = sum(c_across(as.numeric(2:13)), na.rm = TRUE)) %>% 
+  gather(2:13, key = "apps_submitted_binned", value = "n") %>% 
   mutate(n = replace_na(n, 0),
          percent_peer = get_percent(n, total))
 
@@ -60,7 +60,8 @@ fig5b_plot <- fig5_data %>%
        fill = "peer")+
   my_theme
 
-ggsave(filename = paste0("jadavji_biology/figures/fig5b_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig5b_", Sys.Date(), ".jpeg"),
+       width = 10, height = 5.5)
 
 #C. CNS paper y/n----
 fig5c_gen_table <- table(fig4_data$CNS_status, fig4_data$peer)
@@ -169,10 +170,11 @@ fig5f_plot <- fig4_data %>%
 ggsave(filename = paste0("jadavji_biology/figures/fig5f_", Sys.Date(), ".jpeg"))
 
 #compile chi stats (a,d,e)----
-chi_list <- c("fig5a_chi", "fig5d_chi", 
+chi_list <- c("fig5a_chi", 
+              "fig5c_chi", "fig5d_chi", 
               "fig5e_chi", "fig5f_chi")
 
-plot_list <- c('5A', '5D', '5E', '5F')
+plot_list <- c('5A', '5C', '5D', '5E', '5F')
 
 fig5_chi_tbl_raw <- map2_df(chi_list, plot_list, get_wilcox_tbl) 
 
