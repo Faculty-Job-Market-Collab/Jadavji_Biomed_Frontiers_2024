@@ -1,5 +1,5 @@
 #load data, functions, and packages
-#source("code/load_data.R")
+source("code/load_data.R")
 
 library(ggsignif)
 
@@ -39,7 +39,7 @@ bio_demo_data <- left_join(bio_ids, demo_data, by = 'id') %>% distinct()
 
 bio_network_data <- left_join(bio_ids, network_data, by = 'id') %>% distinct()
 
-bio_qualifications <- bio_qualifications %>% 
+bio_qualifications <- bio_clean %>% 
   mutate(postdoc_fellow = if_else(str_detect(grants_awarded, "Postdoctoral"), 
                                   "Yes", "No")) %>% 
   mutate(paper_outliers = if_else(as.numeric(`peer-reviewed_papers`) > 33, "yes", "no"),
@@ -47,7 +47,8 @@ bio_qualifications <- bio_qualifications %>%
          corres_outliers = if_else(as.numeric(corresponding_author) > 10, "yes", "no"),
          first_outliers = if_else(as.numeric(first_author) > 15, "yes", "no"),
          cites_outliers = if_else(as.numeric(scholar_citations_all) > 2199, "yes", "no"),
-         hindex_outliers = if_else(as.numeric(scholar_hindex) > 19, "yes", "no"))
+         hindex_outliers = if_else(as.numeric(scholar_hindex) > 19, "yes", "no"),
+         apps_sub_outliers = if_else(as.numeric(apps_submitted) > 91, "yes", "no"))
 
 bio_qualif_data <- bio_tidy_data %>% 
   filter(section == "qualifications") %>% 

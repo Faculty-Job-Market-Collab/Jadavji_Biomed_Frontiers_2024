@@ -3,7 +3,7 @@
 #A. ----
 fig4a_table <- table(fig3_data$apps_submitted, fig3_data$adjusted_gender)
 
-fig4a_chi <- chisq.test(fig4a_table)
+fig4a_chi <- chisq.test(fig4a_table, simulate.p.value = TRUE, B = 10000)
 
 fig4a_data <- fig3_data %>% 
   filter(!is.na(apps_submitted_binned)) %>%
@@ -34,11 +34,29 @@ fig4a_plot <- fig4a_plot_leg+
 ggsave(filename = paste0("jadavji_biology/figures/fig4a_", Sys.Date(), ".jpeg"))
 
 #B. ----
-fig4b_plot <- fig5_data %>% 
+fig4b_data <- fig5_data %>% 
   filter(!is.na(inst_type)) %>% 
   filter(!is.na(adjusted_gender)) %>% 
-  select(id, adjusted_gender, inst_type_bin, values_binned) %>% 
+  select(id, adjusted_gender, inst_type_bin, values, values_binned) %>% 
   distinct() %>%
+  mutate(values = as.numeric(values),
+         dummy_var = paste0(adjusted_gender, ":", inst_type_bin))
+#inst only
+inst_4b <- fig4b_data %>% select(id, inst_type_bin, values_binned) %>% distinct()
+
+fig4b_inst_table <- table(fig4b_data$dummy_var, fig4b_data$values_binned)
+
+fig4b_inst_chi <- chisq.test(fig4b_inst_table, simulate.p.value = TRUE, B = 10000)  
+#gender only
+fig4b_gen_table <- table(fig4b_data$adjusted_gender, fig4b_data$values_binned)
+
+fig4b_gen_chi <- chisq.test(fig4b_gen_table, simulate.p.value = TRUE, B = 10000)  
+#inst+gender
+fig4b_table <- table(fig4b_data$dummy_var, fig4b_data$values_binned)
+
+fig4b_chi <- chisq.test(fig4b_table, simulate.p.value = TRUE, B = 10000)
+
+fig4b_data <- fig4b_data %>% 
   count(adjusted_gender, inst_type_bin, values_binned) %>% 
   spread(key = values_binned, value = n) %>% 
   mutate(across(3:15, ~ replace_na(.x, replace = 0))) %>% 
@@ -46,7 +64,9 @@ fig4b_plot <- fig5_data %>%
   mutate(total = sum(c_across(as.numeric(3:15)), na.rm = TRUE),
          across(3:15, ~ get_percent(.x, total))) %>% 
   gather(3:15, key = values_binned, value = percent) %>% 
-  select(-total) %>% distinct() %>% 
+  select(-total) %>% distinct()
+
+fig4b_plot <- fig4b_data %>% 
   ggplot(aes(x = factor(values_binned, 
                         levels = bin_levels_small), 
              y = percent, 
@@ -65,7 +85,7 @@ ggsave(filename = paste0("jadavji_biology/figures/fig4b_", Sys.Date(), ".jpeg"))
 #C. CNS paper y/n----
 fig4c_gen_table <- table(fig4_data$CNS_status, fig4_data$adjusted_gender)
 
-fig4c_chi <- chisq.test(fig4c_gen_table)
+fig4c_chi <- chisq.test(fig4c_gen_table, simulate.p.value = TRUE, B = 10000)
 
 fig4c_plot <- fig4_data %>% 
   count(adjusted_gender, CNS_status) %>% 
@@ -85,7 +105,7 @@ ggsave(filename = paste0("jadavji_biology/figures/fig4c_", Sys.Date(), ".jpeg"))
 #D. Number of applications submitted ----
 fig4d_table <- table(fig3_data$faculty_offers, fig3_data$adjusted_gender)
 
-fig4d_chi <- chisq.test(fig4d_table)
+fig4d_chi <- chisq.test(fig4d_table, simulate.p.value = TRUE, B = 10000)
 
 fig4d_data <- fig3_data %>% 
   filter(!is.na(faculty_offers)) %>%
@@ -115,7 +135,7 @@ ggsave(filename = paste0("jadavji_biology/figures/fig4d_", Sys.Date(), ".jpeg"))
 #E. ----
 fig4e_table <- table(fig3_data$on_site_interviews, fig3_data$adjusted_gender)
 
-fig4e_chi <- chisq.test(fig4e_table)
+fig4e_chi <- chisq.test(fig4e_table, simulate.p.value = TRUE, B = 10000)
 
 fig4e_data <- fig3_data %>% 
   filter(!is.na(on_site_interviews)) %>%
@@ -144,7 +164,7 @@ ggsave(filename = paste0("jadavji_biology/figures/fig4e_", Sys.Date(), ".jpeg"))
 #F. 1st author CNS y/n----
 fig4f_table <- table(fig4_data$CNS_first_author, fig4_data$adjusted_gender)
 
-fig4f_chi <- chisq.test(fig4f_table)
+fig4f_chi <- chisq.test(fig4f_table, simulate.p.value = TRUE, B = 10000)
 
 fig4f_plot <- fig4_data %>% 
   filter(!is.na(faculty_offers)) %>%
@@ -170,11 +190,13 @@ fig4f_plot <- fig4_data %>%
 ggsave(filename = paste0("jadavji_biology/figures/fig4f_", Sys.Date(), ".jpeg"))
 
 #compile chi stats (a,d,e)----
-chi_list <- c("fig4a_chi", 
+chi_list <- c("fig4a_chi", "fig4b_chi", 
+              "fig4b_inst_chi", "fig4b_gen_chi",
               "fig4c_chi", "fig4d_chi", 
               "fig4e_chi", "fig4f_chi")
 
-plot_list <- c('4A', '4C', '4D', '4E', '4F')
+plot_list <- c('4A', '4B Gender:Inst', '4B PUIvRI', '4B Gender', 
+               '4C', '4D', '4E', '4F')
 
 fig4_chi_tbl_raw <- map2_df(chi_list, plot_list, get_wilcox_tbl) 
 

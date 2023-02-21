@@ -3,7 +3,7 @@
 #A. ----
 fig5a_table <- table(fig3_data$apps_submitted, fig3_data$peer)
 
-fig5a_chi <- chisq.test(fig5a_table)
+fig5a_chi <- chisq.test(fig5a_table, simulate.p.value = TRUE, B = 10000)
 
 fig5a_data <- fig3_data %>% 
   filter(!is.na(apps_submitted_binned)) %>%
@@ -34,11 +34,29 @@ fig5a_plot <- fig5a_plot_leg+
 ggsave(filename = paste0("jadavji_biology/figures/fig5a_", Sys.Date(), ".jpeg"))
 
 #B. ----
-fig5b_plot <- fig5_data %>% 
+fig5b_data <- fig5_data %>% 
   filter(!is.na(inst_type)) %>% 
   filter(!is.na(peer)) %>% 
-  select(id, peer, inst_type_bin, values_binned) %>% 
-  distinct() %>% 
+  select(id, peer, inst_type_bin, values_binned, values) %>% 
+  distinct() %>%
+  mutate(values = as.numeric(values),
+         dummy_var = paste0(peer, ":", inst_type_bin))
+#inst only
+inst_5b <- fig5b_data %>% select(id, inst_type_bin, values_binned) %>% distinct()
+
+fig5b_inst_table <- table(fig5b_data$dummy_var, fig5b_data$values_binned)
+
+fig5b_inst_chi <- chisq.test(fig5b_inst_table, simulate.p.value = TRUE, B = 10000)  
+#peer only
+fig5b_peer_table <- table(fig5b_data$peer, fig5b_data$values_binned)
+
+fig5b_peer_chi <- chisq.test(fig5b_peer_table, simulate.p.value = TRUE, B = 10000)  
+#inst+peer
+fig5b_table <- table(fig5b_data$dummy_var, fig5b_data$values_binned)
+
+fig5b_chi <- chisq.test(fig5b_table, simulate.p.value = TRUE, B = 10000)
+
+fig5b_data <- fig5b_data %>% 
   count(peer, inst_type_bin, values_binned) %>% 
   spread(key = values_binned, value = n) %>% 
   mutate(across(3:15, ~ replace_na(.x, replace = 0))) %>% 
@@ -46,7 +64,9 @@ fig5b_plot <- fig5_data %>%
   mutate(total = sum(c_across(as.numeric(3:15)), na.rm = TRUE),
          across(3:15, ~ get_percent(.x, total))) %>% 
   gather(3:15, key = values_binned, value = percent) %>% 
-  select(-total) %>% distinct() %>% 
+  select(-total) %>% distinct() 
+
+fig5b_plot <- fig5b_data %>% 
   ggplot(aes(x = factor(values_binned, 
                         levels = bin_levels_small), 
              y = percent, 
@@ -64,9 +84,9 @@ ggsave(filename = paste0("jadavji_biology/figures/fig5b_", Sys.Date(), ".jpeg"),
        width = 10, height = 5.5)
 
 #C. CNS paper y/n----
-fig5c_gen_table <- table(fig4_data$CNS_status, fig4_data$peer)
+fig5c_peer_table <- table(fig4_data$CNS_status, fig4_data$peer)
 
-fig5c_chi <- chisq.test(fig5c_gen_table)
+fig5c_chi <- chisq.test(fig5c_peer_table, simulate.p.value = TRUE, B = 10000)
 
 fig5c_plot <- fig4_data %>% 
   count(peer, CNS_status) %>% 
@@ -86,7 +106,7 @@ ggsave(filename = paste0("jadavji_biology/figures/fig5c_", Sys.Date(), ".jpeg"))
 #D. Number of applications submitted ----
 fig5d_table <- table(fig3_data$faculty_offers, fig3_data$peer)
 
-fig5d_chi <- chisq.test(fig5d_table)
+fig5d_chi <- chisq.test(fig5d_table, simulate.p.value = TRUE, B = 10000)
 
 fig5d_data <- fig3_data %>% 
   filter(!is.na(faculty_offers)) %>% 
@@ -116,7 +136,7 @@ ggsave(filename = paste0("jadavji_biology/figures/fig5d_", Sys.Date(), ".jpeg"))
 #E. ----
 fig5e_table <- table(fig3_data$on_site_interviews, fig3_data$peer)
 
-fig5e_chi <- chisq.test(fig5e_table)
+fig5e_chi <- chisq.test(fig5e_table, simulate.p.value = TRUE, B = 10000)
 
 fig5e_data <- fig3_data %>% 
   filter(!is.na(on_site_interviews)) %>%
@@ -145,7 +165,7 @@ ggsave(filename = paste0("jadavji_biology/figures/fig5e_", Sys.Date(), ".jpeg"))
 #F. 1st author CNS y/n----
 fig5f_table <- table(fig4_data$CNS_first_author, fig4_data$peer)
 
-fig5f_chi <- chisq.test(fig5f_table)
+fig5f_chi <- chisq.test(fig5f_table, simulate.p.value = TRUE, B = 10000)
 
 fig5f_plot <- fig4_data %>% 
   filter(!is.na(faculty_offers)) %>%
@@ -170,11 +190,13 @@ fig5f_plot <- fig4_data %>%
 ggsave(filename = paste0("jadavji_biology/figures/fig5f_", Sys.Date(), ".jpeg"))
 
 #compile chi stats (a,d,e)----
-chi_list <- c("fig5a_chi", 
+chi_list <- c("fig5a_chi", "fig5b_chi", 
+              "fig5b_inst_chi", "fig5b_peer_chi",
               "fig5c_chi", "fig5d_chi", 
               "fig5e_chi", "fig5f_chi")
 
-plot_list <- c('5A', '5C', '5D', '5E', '5F')
+plot_list <- c('5A', '5B PEER:Inst', '5B PUIvRI', '5B PEER',
+               '5C', '5D', '5E', '5F')
 
 fig5_chi_tbl_raw <- map2_df(chi_list, plot_list, get_wilcox_tbl) 
 
