@@ -7,6 +7,7 @@ fig4a_chi <- chisq.test(fig4a_table, simulate.p.value = TRUE, B = 10000)
 
 fig4a_data <- fig3_data %>% 
   filter(!is.na(apps_submitted_binned)) %>%
+  filter(apps_submitted_binned != "NR") %>%
   count(adjusted_gender, apps_submitted_binned) %>% 
   spread(key = apps_submitted_binned, value = n) %>% 
   rowwise() %>% 
@@ -37,24 +38,31 @@ ggsave(filename = paste0("jadavji_biology/figures/fig4a_", Sys.Date(), ".jpeg"))
 fig4b_data <- fig5_data %>% 
   filter(!is.na(inst_type)) %>% 
   filter(!is.na(adjusted_gender)) %>% 
+  filter(inst_type != "NR") %>% 
+  filter(adjusted_gender != "NR") %>% 
   select(id, adjusted_gender, inst_type_bin, values, values_binned) %>% 
   distinct() %>%
   mutate(values = as.numeric(values),
          dummy_var = paste0(adjusted_gender, ":", inst_type_bin))
 #inst only
-inst_4b <- fig4b_data %>% select(id, inst_type_bin, values_binned) %>% distinct()
+inst_4b <- fig4b_data %>% 
+  select(id, inst_type_bin, values_binned) %>% 
+  distinct()
 
 fig4b_inst_table <- table(fig4b_data$dummy_var, fig4b_data$values_binned)
 
-fig4b_inst_chi <- chisq.test(fig4b_inst_table, simulate.p.value = TRUE, B = 10000)  
+fig4b_inst_chi <- chisq.test(fig4b_inst_table, 
+                             simulate.p.value = TRUE, B = 10000)  
 #gender only
 fig4b_gen_table <- table(fig4b_data$adjusted_gender, fig4b_data$values_binned)
 
-fig4b_gen_chi <- chisq.test(fig4b_gen_table, simulate.p.value = TRUE, B = 10000)  
+fig4b_gen_chi <- chisq.test(fig4b_gen_table, 
+                            simulate.p.value = TRUE, B = 10000)  
 #inst+gender
 fig4b_table <- table(fig4b_data$dummy_var, fig4b_data$values_binned)
 
-fig4b_chi <- chisq.test(fig4b_table, simulate.p.value = TRUE, B = 10000)
+fig4b_chi <- chisq.test(fig4b_table, 
+                        simulate.p.value = TRUE, B = 10000)
 
 fig4b_data <- fig4b_data %>% 
   count(adjusted_gender, inst_type_bin, values_binned) %>% 
@@ -109,6 +117,7 @@ fig4d_chi <- chisq.test(fig4d_table, simulate.p.value = TRUE, B = 10000)
 
 fig4d_data <- fig3_data %>% 
   filter(!is.na(faculty_offers)) %>%
+  filter(faculty_offers != "NR") %>%
   count(adjusted_gender, faculty_offers) %>% 
   spread(key = faculty_offers, value = n) %>% 
   rowwise() %>% 
@@ -139,6 +148,7 @@ fig4e_chi <- chisq.test(fig4e_table, simulate.p.value = TRUE, B = 10000)
 
 fig4e_data <- fig3_data %>% 
   filter(!is.na(on_site_interviews)) %>%
+  filter(on_site_interviews != "NR") %>%
   count(adjusted_gender, on_site_interviews) %>% 
   spread(key = on_site_interviews, value = n) %>% 
   rowwise() %>% 
@@ -166,8 +176,9 @@ fig4f_table <- table(fig4_data$CNS_first_author, fig4_data$adjusted_gender)
 
 fig4f_chi <- chisq.test(fig4f_table, simulate.p.value = TRUE, B = 10000)
 
-fig4f_plot <- fig4_data %>% 
+fig4f_data <- fig4_data %>% 
   filter(!is.na(faculty_offers)) %>%
+  filter(faculty_offers != "NR") %>%
   #filter(adjusted_gender %in% c("Woman", "Man")) %>% 
   #mutate(CNS_first_author = replace_na(CNS_first_author, "0")) %>%
   count(adjusted_gender, CNS_first_author) %>% 
@@ -176,7 +187,9 @@ fig4f_plot <- fig4_data %>%
          `0` = get_percent(`0`, total),
          `1` = get_percent(`1`, total),
          `2` = get_percent(`2`, total)) %>% 
-  gather(2:4, key = CNS_first_author, value = percent) %>% 
+  gather(2:4, key = CNS_first_author, value = percent)
+
+fig4f_plot <- fig4f_data %>% 
   ggplot(aes(x = CNS_first_author, y = percent,
              fill = factor(adjusted_gender, levels = gender_breaks)))+
   geom_col(position = "dodge")+

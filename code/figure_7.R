@@ -24,23 +24,20 @@ ggsave("nafisa/figures/fig7a.png")
 
 #postdoc fellowship: y/n
 fellow_data <- fig6_data %>% 
-  filter(question == "grants_awarded") %>% distinct() %>% 
+  filter(question %in% c("postdoc_fellow", "predoc_fellow")) %>% 
   select(-question) %>% 
-  filter(response != "Transition to Independence Award ") %>% 
-  mutate(status = "Yes",
-         response = str_remove_all(response, "(?<=Grant).*")) %>% 
   distinct() %>% 
   spread(key = response, value = status) %>% 
   mutate(across(3:5, ~ if_else(is.na(.), "No", .)))
 
-fig7_postfellow_wilcox <- wilcox.test(perc_offers ~ `Postdoctoral Fellowship`,
+fig7_postfellow_wilcox <- wilcox.test(perc_offers ~ postdoc_fellow,
                                       data = fellow_data,
                                       na.rm=TRUE, paired=FALSE, 
                                       exact=FALSE, conf.int=TRUE)
 
 fig7b_plot <- fellow_data %>% 
-  ggplot(aes(x = `Postdoctoral Fellowship`, y = perc_offers, 
-             color = `Postdoctoral Fellowship`))+
+  ggplot(aes(x = postdoc_fellow, y = perc_offers, 
+             color = postdoc_fellow))+
   geom_violin()+
   geom_jitter()+
   coord_flip()+
@@ -53,14 +50,14 @@ fig7b_plot <- fellow_data %>%
 ggsave("nafisa/figures/fig7b.png")
 
 #phd fellowship: y/n
-fig7_phdfellow_wilcox <- wilcox.test(perc_offers ~ `Predoctoral Fellowship`,
+fig7_phdfellow_wilcox <- wilcox.test(perc_offers ~ predoc_fellow,
                                      data = fellow_data,
                                      na.rm=TRUE, paired=FALSE, 
                                      exact=FALSE, conf.int=TRUE)
 
 fig7c_plot <- fellow_data %>% 
-  ggplot(aes(x = `Predoctoral Fellowship`, y = perc_offers, 
-             color = `Predoctoral Fellowship`))+
+  ggplot(aes(x = predoc_fellow, y = perc_offers, 
+             color = predoc_fellow))+
   geom_violin()+
   geom_jitter()+
   coord_flip()+

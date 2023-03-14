@@ -7,6 +7,7 @@ fig5a_chi <- chisq.test(fig5a_table, simulate.p.value = TRUE, B = 10000)
 
 fig5a_data <- fig3_data %>% 
   filter(!is.na(apps_submitted_binned)) %>%
+  filter(apps_submitted_binned != "NR") %>%
   count(peer, apps_submitted_binned) %>% 
   spread(key = apps_submitted_binned, value = n) %>% 
   rowwise() %>% 
@@ -37,20 +38,25 @@ ggsave(filename = paste0("jadavji_biology/figures/fig5a_", Sys.Date(), ".jpeg"))
 fig5b_data <- fig5_data %>% 
   filter(!is.na(inst_type)) %>% 
   filter(!is.na(peer)) %>% 
+  filter(inst_type != "NR") %>% 
+  filter(peer != "NR") %>% 
   select(id, peer, inst_type_bin, values_binned, values) %>% 
   distinct() %>%
   mutate(values = as.numeric(values),
          dummy_var = paste0(peer, ":", inst_type_bin))
 #inst only
-inst_5b <- fig5b_data %>% select(id, inst_type_bin, values_binned) %>% distinct()
+inst_5b <- fig5b_data %>% 
+  select(id, inst_type_bin, values_binned) %>% distinct()
 
 fig5b_inst_table <- table(fig5b_data$dummy_var, fig5b_data$values_binned)
 
-fig5b_inst_chi <- chisq.test(fig5b_inst_table, simulate.p.value = TRUE, B = 10000)  
+fig5b_inst_chi <- chisq.test(fig5b_inst_table, 
+                             simulate.p.value = TRUE, B = 10000)  
 #peer only
 fig5b_peer_table <- table(fig5b_data$peer, fig5b_data$values_binned)
 
-fig5b_peer_chi <- chisq.test(fig5b_peer_table, simulate.p.value = TRUE, B = 10000)  
+fig5b_peer_chi <- chisq.test(fig5b_peer_table, 
+                             simulate.p.value = TRUE, B = 10000)  
 #inst+peer
 fig5b_table <- table(fig5b_data$dummy_var, fig5b_data$values_binned)
 
@@ -86,7 +92,8 @@ ggsave(filename = paste0("jadavji_biology/figures/fig5b_", Sys.Date(), ".jpeg"),
 #C. CNS paper y/n----
 fig5c_peer_table <- table(fig4_data$CNS_status, fig4_data$peer)
 
-fig5c_chi <- chisq.test(fig5c_peer_table, simulate.p.value = TRUE, B = 10000)
+fig5c_chi <- chisq.test(fig5c_peer_table, 
+                        simulate.p.value = TRUE, B = 10000)
 
 fig5c_plot <- fig4_data %>% 
   count(peer, CNS_status) %>% 
@@ -110,6 +117,7 @@ fig5d_chi <- chisq.test(fig5d_table, simulate.p.value = TRUE, B = 10000)
 
 fig5d_data <- fig3_data %>% 
   filter(!is.na(faculty_offers)) %>% 
+  filter(faculty_offers != "NR") %>% 
   count(peer, faculty_offers) %>% 
   spread(key = faculty_offers, value = n) %>% 
   rowwise() %>% 
@@ -140,6 +148,7 @@ fig5e_chi <- chisq.test(fig5e_table, simulate.p.value = TRUE, B = 10000)
 
 fig5e_data <- fig3_data %>% 
   filter(!is.na(on_site_interviews)) %>%
+  filter(on_site_interviews != "NR") %>%
   count(peer, on_site_interviews) %>% 
   spread(key = on_site_interviews, value = n) %>% 
   rowwise() %>% 
@@ -169,6 +178,7 @@ fig5f_chi <- chisq.test(fig5f_table, simulate.p.value = TRUE, B = 10000)
 
 fig5f_plot <- fig4_data %>% 
   filter(!is.na(faculty_offers)) %>%
+  filter(faculty_offers != "NR") %>%
   count(peer, CNS_first_author) %>% 
   spread(key = CNS_first_author, value = n) %>% 
   mutate(`2` = if_else(is.na(`2`), 0, as.numeric(`2`)),

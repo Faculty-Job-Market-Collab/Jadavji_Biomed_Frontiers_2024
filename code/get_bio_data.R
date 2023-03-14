@@ -1,16 +1,16 @@
-#load data, functions, and packages
+#load data, functions, and packages----
 source("code/load_data.R")
 
 library(ggsignif)
 
 # Identify biological science responses----
-bio_ids <- demo_data %>% 
+bio_clean <- clean_data %>% 
   filter(response == "Biological Sciences") %>% 
-  distinct() %>% select(id)
+  distinct() 
 
-bio_clean <- left_join(bio_ids, clean_data, by = 'id') %>% distinct() 
+bio_ids <- bio_clean %>% select(id) %>% distinct()
 
-# Identify outliers
+# Identify outliers----
 metric_quals <- c("peer-reviewed_papers", "conference_abstracts", 
                   "corresponding_author", "first_author",
                   "scholar_citations_all", "scholar_hindex",
@@ -32,16 +32,10 @@ bio_tidy_data <- left_join(bio_ids, tidy_data, by = 'id') %>%
   filter(outlier == "no") %>% 
   select(-outlier)
 
-write_csv(bio_tidy_data, "jadavji_biology/data/bio_tidy_data.csv")
+write_csv(bio_tidy_data, 
+          "jadavji_biology/data/bio_tidy_data.csv") #tidy data file for lily w/out outliers
 
-#Figure 1.----
-bio_demo_data <- left_join(bio_ids, demo_data, by = 'id') %>% distinct()
-
-bio_network_data <- left_join(bio_ids, network_data, by = 'id') %>% distinct()
-
-bio_qualifications <- bio_clean %>% 
-  mutate(postdoc_fellow = if_else(str_detect(grants_awarded, "Postdoctoral"), 
-                                  "Yes", "No")) %>% 
+bio_clean_data <- bio_clean %>% 
   mutate(paper_outliers = if_else(as.numeric(`peer-reviewed_papers`) > 33, "yes", "no"),
          abstract_outliers = if_else(as.numeric(conference_abstracts) > 45, "yes", "no"),
          corres_outliers = if_else(as.numeric(corresponding_author) > 10, "yes", "no"),
@@ -50,49 +44,90 @@ bio_qualifications <- bio_clean %>%
          hindex_outliers = if_else(as.numeric(scholar_hindex) > 19, "yes", "no"),
          apps_sub_outliers = if_else(as.numeric(apps_submitted) > 91, "yes", "no"))
 
+write_csv(bio_clean_data, 
+          "jadavji_biology/data/bio_clean_data.csv") #clean data file for lily
+
+
+bio_demo_data <- left_join(bio_ids, demo_data, by = 'id') %>% distinct()
+
+bio_network_data <- left_join(bio_ids, network_data, by = 'id') %>% distinct()
+
 bio_qualif_data <- bio_tidy_data %>% 
   filter(section == "qualifications") %>% 
   select(1:3) %>% 
   distinct()
 
 bio_app_outcomes <- left_join(bio_ids, app_outcomes, by = 'id') %>% distinct()
+#Figure 1.----
+fig1_data <- bio_tidy_data %>% 
+  select(id, question, response) %>% 
+  filter(question %in% c("CNS_status", "CNS_first_author", "scholar_hindex",
+                         "scholar_citations_all", "peer-reviewed_papers",
+                         "first_author")) %>% 
+  filter(!is.na(response)) %>% 
+  filter(response != "NR") %>% 
+  distinct()
 
 source("jadavji_biology/code/figure_1.R")
 
 #Figure 2. ----
+fig2a_data <- bio_clean_data %>% 
+  filter(apps_sub_outliers == no) %>% 
+  select(id, R1_apps_submitted, PUI_apps_submitted) %>% 
+  filter(!is.na(R1_apps_submitted)) %>% 
+  gather(-id, key = question, value = response) %>% 
+  mutate(response = get_small_bins(as.numeric(response)),
+         question = if_else(str_detect(question, "R1"), "RI", "PUI")) %>% 
+  distinct() %>% 
+  filter(!is.na(response)) %>%
+  count(question, response) %>% 
+  mutate(percent = get_percent(n, 268))
+
+fig2b_data <- bio_tidy_data %>% 
+  select(-question, -response, -section) %>% 
+  filter(inst_type == "offer_institutions") %>% 
+  filter(inst_key == "PUI_RI") %>% 
+  filter(!is.na(inst_value)) %>% 
+  distinct() %>% 
+  count(id, inst_value) %>% 
+  count(inst_value, n) %>%
+  mutate(percent = get_percent(nn, 96))
+
 source("jadavji_biology/code/figure_2.R")
 
 #Figure 3.----
 fig3_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
-  filter(question == "adjusted_gender" | question == "off_site_interviews" |
-           question == "on_site_interviews" | question == "peer" |
-           question == "faculty_offers" | 
-           question == "apps_submitted_binned" |
-           question == "apps_submitted") %>% 
+  filter(question %in% c("adjusted_gender", "off_site_interviews",
+                         "on_site_interviews", "peer", "faculty_offers",
+                         "apps_submitted_binned", "apps_submitted")) %>% 
   distinct() %>% 
   spread(key = question, value = response) %>% 
   filter(!is.na(adjusted_gender)) %>% 
   filter(!is.na(faculty_offers)) %>% 
+  filter(adjusted_gender != "NR") %>% 
+  filter(faculty_offers != "NR") %>% 
   mutate(faculty_offers = case_when(
     as.numeric(faculty_offers) == 0 ~ "0",
     as.numeric(faculty_offers) == 1 ~ "1",
     as.numeric(faculty_offers) >= 1 ~ ">1"
   ),
-  faculty_offers = factor(faculty_offers, levels = c("0", "1", ">1")))
+  faculty_offers = factor(faculty_offers, 
+                          levels = c("0", "1", ">1")))
 
 source("jadavji_biology/code/figure_3.R")
 
 # Figure 4. ----
 fig4_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
-  filter(question == "adjusted_gender" | question == "CNS_status" |
-           question == "CNS_first_author" | question == "peer" |
-           question == "faculty_offers") %>% 
+  filter(question %in% c("adjusted_gender", "CNS_status",
+                         "CNS_first_author", "peer", "faculty_offers")) %>% 
   distinct() %>% 
   spread(key = question, value = response)  %>% distinct() %>% 
   filter(!is.na(adjusted_gender)) %>% 
   filter(!is.na(CNS_status)) %>% 
+  filter(adjusted_gender != "NR") %>% 
+  filter(CNS_status != "NR") %>% 
   mutate(faculty_offers = case_when(
     as.numeric(faculty_offers) == 0 ~ "0",
     as.numeric(faculty_offers) == 1 ~ "1",
@@ -104,13 +139,12 @@ fig4_data <- bio_tidy_data %>%
 #Figure 5. ----
 fig5_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
-  filter(question == "adjusted_gender" |
-           question == "teaching_status" |
-           question == "faculty_offers" |
-           question == "peer") %>% 
+  filter(question %in% c("adjusted_gender", "teaching_status",
+                         "faculty_offers", "peer")) %>% 
   distinct() %>% 
   spread(key = question, value = response) %>% 
   filter(!is.na(adjusted_gender)) %>% 
+  filter(adjusted_gender != "NR") %>% 
   mutate(faculty_offers = case_when(
     as.numeric(faculty_offers) == 0 ~ "0",
     as.numeric(faculty_offers) == 1 ~ "1",
@@ -154,10 +188,19 @@ source("jadavji_biology/code/figure_4.R")
 
 source("jadavji_biology/code/figure_5.R")
 
+#Figure 6.----
+#fig6_data <- bio_tidy_data %>% 
+#  filter(question %in% c("scholar_citations_all", "application_cycles",
+#                         "peer-reviewed_papers", "scholar_hindex",
+#                         "first_author", "corresponding_author",
+#                         "CNS_first_author", "transition_award",
+#                         "CNS_status", "postdoc_fellow", "predoc_fellow"
+#                         ))
+
 #data tables----
 
 #demo table
-demo_table <- bio_demo_data %>% 
+demo_table <- bio_tidy_data %>% 
   filter(question %in% c("adjusted_gender", "age", "research_category", 
                          "residence", "peer", "dependents",
                          "position", "legal_status", "disability_status", 
@@ -174,7 +217,8 @@ demo_table <- bio_demo_data %>%
   count(question, response) %>% 
   mutate(percent_total = get_percent(n, 332))
 
-write_csv(demo_table, "jadavji_biology/figures/demographics.csv")
+write_csv(demo_table, paste0("jadavji_biology/figures/demographics_",
+                             Sys.Date(), ".csv"))
 
 #table of application metrics
 metrics_table <- bio_tidy_data %>% 
@@ -185,6 +229,7 @@ metrics_table <- bio_tidy_data %>%
                          "scholar_citations_all", "CNS_status",
                          "application_cycles", "faculty_offers",
                          "apps_submitted")) %>% 
+  filter(response != "NR") %>% 
   distinct() %>% 
   group_by(question) %>% 
   summarise(n = n(), med = median(as.numeric(response), 
@@ -196,15 +241,17 @@ metrics_table <- bio_tidy_data %>%
   mutate(range = paste0("(", min_val, ", ", max_val, ")")) %>% 
   select(-min_val, -max_val)
 
-write_csv(metrics_table, "jadavji_biology/figures/metrics.csv")
+write_csv(metrics_table, paste0("jadavji_biology/figures/metrics_",
+                                Sys.Date(), ".csv"))
 
 metrics_table2 <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(!is.na(question)) %>%  
-  filter(question == "grants_awarded") %>% 
-  filter(response != "Transition Award as PI") %>% 
+  filter(question %in% c("postdoc_fellow", "predoc_fellow",
+                         "grant_pi", "grant_copi")) %>% 
   distinct() %>% 
   count(question, response) %>% 
   mutate(percent = get_percent(n, 332))
 
-write_csv(metrics_table2, "jadavji_biology/figures/grants.csv")
+write_csv(metrics_table2, paste0("jadavji_biology/figures/grants_",
+                                 Sys.Date(), ".csv"))

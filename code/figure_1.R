@@ -1,7 +1,7 @@
 #Figure 1 -- Applicant scholarly metrics
 
 #A. 1st author papers----
-fig1a_plot <- bio_qualif_data %>% 
+fig1a_plot <- fig1_data %>% 
   filter(question == "first_author") %>% 
   filter(!is.na(response)) %>% 
   distinct() %>% count(response) %>% 
@@ -14,10 +14,11 @@ fig1a_plot <- bio_qualif_data %>%
   labs(x="Number of first-author papers")+
   my_theme_horiz
 
-ggsave(filename = paste0("jadavji_biology/figures/fig1a_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig1a_", 
+                         Sys.Date(), ".jpeg"))
 
 #B. Total publications----
-fig1b_plot <- bio_qualif_data %>% 
+fig1b_plot <- fig1_data %>% 
   filter(question == "peer-reviewed_papers") %>% 
   distinct() %>% count(response) %>% 
   mutate(percent = get_percent(n, 164),
@@ -28,10 +29,11 @@ fig1b_plot <- bio_qualif_data %>%
   labs(y="Respondents (%)", x="Number of papers")+
   my_theme_horiz
 
-ggsave(filename = paste0("jadavji_biology/figures/fig1b_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig1b_", 
+                         Sys.Date(), ".jpeg"))
 
 #C. Total citations----
-fig1c_plot <- bio_qualif_data %>% 
+fig1c_plot <- fig1_data %>% 
   filter(question == "scholar_citations_all") %>% 
   distinct() %>%
   mutate(papers_bin = get_big_bins(as.numeric(response))) %>% 
@@ -44,10 +46,11 @@ fig1c_plot <- bio_qualif_data %>%
   labs(x="Number of Google Scholar citations", y="Respondents (%)")+
   my_theme
 
-ggsave(filename = paste0("jadavji_biology/figures/fig1c_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig1c_", 
+                         Sys.Date(), ".jpeg"))
 
 #D. H-index----
-fig1d_plot <- bio_qualif_data %>% 
+fig1d_plot <- fig1_data %>% 
   filter(question == "scholar_hindex") %>% 
   distinct() %>% 
   count(response) %>% 
@@ -59,10 +62,11 @@ fig1d_plot <- bio_qualif_data %>%
   labs(y="Respondents (%)", x="Google Scholar H-index")+
   my_theme_horiz
 
-ggsave(filename = paste0("jadavji_biology/figures/fig1d_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig1d_", 
+                         Sys.Date(), ".jpeg"))
 
 #E. Number CNS papers----
-fig1e_plot <- bio_qualif_data %>% 
+fig1e_plot <- fig1_data %>% 
   filter(question == "CNS_first_author") %>% 
   distinct() %>%
   plot_perc_resp(., 40)+
@@ -70,22 +74,25 @@ fig1e_plot <- bio_qualif_data %>%
        x="First author on a CNS paper")+
   my_theme_horiz
 
-ggsave(filename = paste0("jadavji_biology/figures/fig1e_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig1e_", 
+                         Sys.Date(), ".jpeg"))
 
 #F. CNS papers y/n----
-fig1f_plot <- bio_qualif_data %>% 
+fig1f_plot <- fig1_data %>% 
   filter(question == "CNS_status") %>% 
   distinct() %>% 
   plot_perc_resp(., 163)+
   labs(x="Published a CNS paper")+
   my_theme_horiz
 
-ggsave(filename = paste0("jadavji_biology/figures/fig1f_", Sys.Date(), ".jpeg"))
+ggsave(filename = paste0("jadavji_biology/figures/fig1f_", 
+                         Sys.Date(), ".jpeg"))
 
 #G. Post-doc Fellowships y/n----
-fig1g_plot <- bio_qualifications %>% 
+fig1g_plot <- bio_clean_data %>% 
   select(id, postdoc_fellow) %>% 
   filter(!is.na(postdoc_fellow)) %>% 
+  filter(postdoc_fellow != "NR") %>% 
   distinct() %>% 
   count(postdoc_fellow) %>% 
   mutate(percent = get_percent(n, 243)) %>% 
