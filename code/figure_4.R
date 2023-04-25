@@ -152,8 +152,8 @@ fig4e_data <- fig3_data %>%
   count(adjusted_gender, on_site_interviews) %>% 
   spread(key = on_site_interviews, value = n) %>% 
   rowwise() %>% 
-  mutate(total = sum(c_across(as.numeric(2:20)), na.rm = TRUE)) %>% 
-  gather(2:20, key = "on_site_interviews", value = "n") %>% 
+  mutate(total = sum(c_across(as.numeric(2:16)), na.rm = TRUE)) %>% 
+  gather(2:16, key = "on_site_interviews", value = "n") %>% 
   mutate(n = replace_na(n, 0),
          percent_gender = get_percent(n, total))
 
@@ -164,7 +164,7 @@ fig4e_plot <- fig4e_data %>%
   geom_col()+
   facet_wrap(~factor(adjusted_gender, levels = gender_breaks))+
   scale_fill_manual(breaks = gender_breaks, values = gender_color)+
-  scale_y_continuous(expand = c(0,0), limits = c(0,50))+
+  scale_y_continuous(expand = c(0,0))+
   labs(x = "Number of on-site interviews", 
        y = "Percent of responses\nby gender")+
   my_theme

@@ -8,6 +8,7 @@ fig5a_chi <- chisq.test(fig5a_table, simulate.p.value = TRUE, B = 10000)
 fig5a_data <- fig3_data %>% 
   filter(!is.na(apps_submitted_binned)) %>%
   filter(apps_submitted_binned != "NR") %>%
+  filter(peer != "NR") %>% 
   count(peer, apps_submitted_binned) %>% 
   spread(key = apps_submitted_binned, value = n) %>% 
   rowwise() %>% 
@@ -79,7 +80,7 @@ fig5b_plot <- fig5b_data %>%
              fill = factor(peer, levels = peer_breaks)))+
   geom_col(position = "dodge")+
   scale_fill_manual(breaks = peer_breaks, values = peer_color)+
-  scale_y_continuous(expand = c(0,0), limits = c(0,60))+
+  scale_y_continuous(expand = c(0,0))+
   facet_wrap(~inst_type_bin)+
   labs(x = "Number of applications submitted", 
        y = "Percent of peer\n(grouped by institution type)",
@@ -96,6 +97,7 @@ fig5c_chi <- chisq.test(fig5c_peer_table,
                         simulate.p.value = TRUE, B = 10000)
 
 fig5c_plot <- fig4_data %>% 
+  filter(peer != "NR") %>% 
   count(peer, CNS_status) %>% 
   spread(key = CNS_status, value = n) %>% 
   mutate(total = No + Yes,
@@ -118,6 +120,7 @@ fig5d_chi <- chisq.test(fig5d_table, simulate.p.value = TRUE, B = 10000)
 fig5d_data <- fig3_data %>% 
   filter(!is.na(faculty_offers)) %>% 
   filter(faculty_offers != "NR") %>% 
+  filter(peer != "NR") %>% 
   count(peer, faculty_offers) %>% 
   spread(key = faculty_offers, value = n) %>% 
   rowwise() %>% 
@@ -149,11 +152,12 @@ fig5e_chi <- chisq.test(fig5e_table, simulate.p.value = TRUE, B = 10000)
 fig5e_data <- fig3_data %>% 
   filter(!is.na(on_site_interviews)) %>%
   filter(on_site_interviews != "NR") %>%
+  filter(peer != "NR") %>% 
   count(peer, on_site_interviews) %>% 
   spread(key = on_site_interviews, value = n) %>% 
   rowwise() %>% 
-  mutate(total = sum(c_across(as.numeric(2:20)), na.rm = TRUE)) %>% 
-  gather(2:20, key = "on_site_interviews", value = "n") %>% 
+  mutate(total = sum(c_across(as.numeric(2:16)), na.rm = TRUE)) %>% 
+  gather(2:16, key = "on_site_interviews", value = "n") %>% 
   mutate(n = replace_na(n, 0),
          percent_peer = get_percent(n, total))
 
@@ -164,7 +168,7 @@ fig5e_plot <- fig5e_data %>%
   geom_col()+
   facet_wrap(~factor(peer, levels = peer_breaks))+
   scale_fill_manual(breaks = peer_breaks, values = peer_color)+
-  scale_y_continuous(expand = c(0,0), limits = c(0,40))+
+  scale_y_continuous(expand = c(0,0))+
   labs(x = "Number of on-site interviews", 
        y = "Percent of responses\nby PEER status")+
   my_theme
@@ -179,6 +183,7 @@ fig5f_chi <- chisq.test(fig5f_table, simulate.p.value = TRUE, B = 10000)
 fig5f_plot <- fig4_data %>% 
   filter(!is.na(faculty_offers)) %>%
   filter(faculty_offers != "NR") %>%
+  filter(peer != "NR") %>% 
   count(peer, CNS_first_author) %>% 
   spread(key = CNS_first_author, value = n) %>% 
   mutate(`2` = if_else(is.na(`2`), 0, as.numeric(`2`)),
@@ -192,7 +197,7 @@ fig5f_plot <- fig4_data %>%
   geom_col(position = "dodge")+
   facet_wrap(~factor(peer, levels = peer_breaks))+
   scale_fill_manual(breaks = peer_breaks, values = peer_color)+
-  scale_y_continuous(expand = c(0,0), limits = c(0,85))+
+  scale_y_continuous(expand = c(0,0))+
   labs(x = "Number of first-author CNS papers", 
        y = "Percent by PEER Status")+
   my_theme_horiz

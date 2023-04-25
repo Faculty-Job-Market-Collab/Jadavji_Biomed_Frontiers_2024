@@ -90,13 +90,13 @@ ggsave(filename = paste0("jadavji_biology/figures/fig1f_",
 
 #G. Post-doc Fellowships y/n----
 fig1g_plot <- bio_clean_data %>% 
-  select(id, postdoc_fellow) %>% 
-  filter(!is.na(postdoc_fellow)) %>% 
-  filter(postdoc_fellow != "NR") %>% 
+  select(id, postdoctoral_fellow) %>% 
+  filter(!is.na(postdoctoral_fellow)) %>% 
+  filter(postdoctoral_fellow != "NR") %>% 
   distinct() %>% 
-  count(postdoc_fellow) %>% 
+  count(postdoctoral_fellow) %>% 
   mutate(percent = get_percent(n, 243)) %>% 
-  ggplot(aes(x=postdoc_fellow, y = percent))+
+  ggplot(aes(x=postdoctoral_fellow, y = percent))+
   geom_col()+
   scale_y_continuous(expand = c(0,0))+
   labs(y="Respondents (%)", 
