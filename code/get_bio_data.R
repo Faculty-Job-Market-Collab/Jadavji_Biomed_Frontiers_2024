@@ -1,12 +1,12 @@
 #load data, functions, and packages----
-#source("code/load_data.R")
+source("code/load_data.R")
 
 library(ggsignif)
 
 # Identify biological science responses----
 bio_clean <- clean_data %>% 
   filter(research_category == "Biological Sciences") %>% 
-  filter(survey_year == "2021-2022") %>% 
+  #filter(survey_year == "2021-2022") %>% 
   distinct() 
 
 bio_ids <- bio_clean %>% select(id) %>% distinct()
@@ -29,8 +29,8 @@ bio_clean_data <- bio_clean %>%
          apps_sub_outliers = if_else(as.numeric(apps_submitted) > metric_outliers[[7,3]], "yes", "no"))
 
 #write_csv(bio_clean_data, 
-#          "jadavji_biology/data/bio_clean_data",
-#          Sys.Date(), ".csv") #clean data file for lily
+#          paste0("jadavji_biology/data/bio_clean_data",
+#          Sys.Date(), ".csv")) #clean data file for lily
 
 bio_tidy_data <- bio_clean_data %>% 
   gather(-id, key = "question", value = "response")
@@ -249,7 +249,7 @@ demo_table <- bio_tidy_data %>%
                                  "Yes, multiple children/adult(s)" = c("Yes, adult(s)", 
                                                                        "Yes, multiple children",
                                                                        "Yes, adult(s) and child(ren)")
-  )) %>% 
+  )) %>% distinct() %>% 
   count(question, response) %>% 
   mutate(percent_total = get_percent(n, n_bio_resp))
 
@@ -257,16 +257,25 @@ write_csv(demo_table, paste0("jadavji_biology/figures/demographics_",
                              Sys.Date(), ".csv"))
 
 #table of application metrics
-metrics_table <- bio_tidy_data %>% 
+metrics_table_data <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(!is.na(question)) %>% 
   filter(question %in% c("first_author", "corresponding_author",
                          "peer-reviewed_papers", "scholar_hindex",
-                         "scholar_citations_all", "CNS_status",
+                         "scholar_citations_all",
                          "application_cycles", "faculty_offers",
                          "apps_submitted")) %>% 
   filter(response != "NR") %>% 
-  distinct() %>% 
+  mutate(response = if_else(response == ">5", "5", response)) %>% 
+  distinct() 
+
+metrics_list <- select(metrics_table_data, question) %>% distinct() %>% unlist()
+
+metrics_mode <- map_dfr(.x = metrics_list, function(x) get_mode("metrics_table_data", x)) %>% 
+  spread(key = rowid, value = mode_value) %>% #tidy mode values
+  rename(mode_value_1 = `1`, mode_value_2 = `2`)
+
+metrics_table <- metrics_table_data %>% 
   group_by(question) %>% 
   summarise(n = n(), med = median(as.numeric(response), 
                                   na.rm = TRUE), 
@@ -275,19 +284,57 @@ metrics_table <- bio_tidy_data %>%
             min_val = min(as.numeric(response, na.rm = TRUE)),
             max_val = max(as.numeric(response, na.rm = TRUE))) %>% 
   mutate(range = paste0("(", min_val, ", ", max_val, ")")) %>% 
-  select(-min_val, -max_val)
+  select(-min_val, -max_val) %>% 
+  left_join(., metrics_mode, by = "question") #join mode data
 
 write_csv(metrics_table, paste0("jadavji_biology/figures/metrics_",
                                 Sys.Date(), ".csv"))
 
+#drop outliers from standard application metrics
+metric_outlier_ids <- c(paper_outlier_ids, hindex_outlier_ids, cites_outlier_ids, 
+                      first_outlier_ids, corres_outlier_ids, apps_sub_outlier_ids)
+
+metrics_no_outlier_table_data <- bio_tidy_data %>% 
+  select(id, question, response) %>% 
+  filter(!is.na(question)) %>% 
+  filter(id %not_in% metric_outlier_ids) %>% 
+  filter(question %in% c("first_author", "corresponding_author",
+                         "peer-reviewed_papers", "scholar_hindex",
+                         "scholar_citations_all",
+                         "application_cycles", "faculty_offers",
+                         "apps_submitted")) %>% 
+  filter(response != "NR") %>% 
+  mutate(response = if_else(response == ">5", "5", response)) %>% 
+  distinct() 
+
+metrics_no_outlier_mode <- map_dfr(.x = metrics_list, 
+                                   function(x) get_mode("metrics_no_outlier_table_data", x)) %>% 
+  spread(key = rowid, value = mode_value) %>% #tidy mode values
+  rename(mode_value_1 = `1`, mode_value_2 = `2`)
+
+metrics_no_outlier_table <- metrics_no_outlier_table_data %>% 
+  group_by(question) %>% 
+  summarise(n = n(), med = median(as.numeric(response), 
+                                  na.rm = TRUE), 
+            std_dev = round(sd(as.numeric(response, na.rm = TRUE)), 
+                            digits = 2),
+            min_val = min(as.numeric(response, na.rm = TRUE)),
+            max_val = max(as.numeric(response, na.rm = TRUE))) %>% 
+  mutate(range = paste0("(", min_val, ", ", max_val, ")")) %>% 
+  select(-min_val, -max_val) %>% 
+  left_join(., metrics_no_outlier_mode, by = "question")
+
+write_csv(metrics_no_outlier_table, paste0("jadavji_biology/figures/metrics_minus_outliers_",
+                                Sys.Date(), ".csv"))
+#grant and CNS status metrics
 metrics_table2 <- bio_tidy_data %>% 
   select(id, question, response) %>% 
   filter(!is.na(question)) %>%  
   filter(question %in% c("postdoc_fellow", "predoc_fellow",
-                         "grant_pi", "grant_copi")) %>% 
+                         "grant_pi", "grant_copi", "CNS_status")) %>% 
   distinct() %>% 
   count(question, response) %>% 
   mutate(percent = get_percent(n, n_bio_resp))
 
-write_csv(metrics_table2, paste0("jadavji_biology/figures/grants_",
+write_csv(metrics_table2, paste0("jadavji_biology/figures/grants_CNS_",
                                  Sys.Date(), ".csv"))
