@@ -326,6 +326,39 @@ metrics_no_outlier_table <- metrics_no_outlier_table_data %>%
 
 write_csv(metrics_no_outlier_table, paste0("jadavji_biology/figures/metrics_minus_outliers_",
                                 Sys.Date(), ".csv"))
+
+#metrics for applicants with job offers only (no outliers)
+job_offer_ids <- bio_clean_data %>% select(id, faculty_offers) %>% 
+  distinct() %>% 
+  filter(faculty_offers != 0) %>% filter(faculty_offers != "NR") %>% 
+  pull(id)
+
+metrics_job_offer_table_data <- metrics_no_outlier_table_data %>% 
+  filter(id %in% job_offer_ids) 
+
+metrics_job_offer_mode <- map_dfr(.x = metrics_list, 
+                                   function(x) get_mode("metrics_job_offer_table_data", x)) %>% 
+  spread(key = rowid, value = mode_value) %>% #tidy mode values
+  rename(mode_value_1 = `1`, mode_value_2 = `2`, mode_value_3 = `3`, mode_value_4 = `4`, mode_value_5 = `5`, 
+         mode_value_6 = `6`, mode_value_7 = `7`, mode_value_8 = `8`, mode_value_9 = `9`, mode_value_10 = `10`, 
+         mode_value_11 = `11`, mode_value_12 = `12`, mode_value_13 = `13`, mode_value_14 = `14`, 
+         mode_value_15 = `15`, mode_value_16 = `16`)
+
+metrics_job_offer_table <- metrics_job_offer_table_data %>% 
+  group_by(question) %>% 
+  summarise(n = n(), med = median(as.numeric(response), 
+                                  na.rm = TRUE), 
+            std_dev = round(sd(as.numeric(response, na.rm = TRUE)), 
+                            digits = 2),
+            min_val = min(as.numeric(response, na.rm = TRUE)),
+            max_val = max(as.numeric(response, na.rm = TRUE))) %>% 
+  mutate(range = paste0("(", min_val, ", ", max_val, ")")) %>% 
+  select(-min_val, -max_val) %>% 
+  left_join(., metrics_job_offer_mode, by = "question")
+
+write_csv(metrics_job_offer_table, paste0("jadavji_biology/figures/metrics_job_offers_minus_outliers_",
+                                           Sys.Date(), ".csv"))
+
 #grant and CNS status metrics
 metrics_table2 <- bio_tidy_data %>% 
   select(id, question, response) %>% 
@@ -337,4 +370,20 @@ metrics_table2 <- bio_tidy_data %>%
   mutate(percent = get_percent(n, n_bio_resp))
 
 write_csv(metrics_table2, paste0("jadavji_biology/figures/grants_CNS_",
+                                 Sys.Date(), ".csv"))
+
+#grant and CNS status metrics for those with job offers (no outliers)
+n_bio_offer_resp <- length(job_offer_ids)
+
+metrics_job_offer_table2 <- bio_tidy_data %>% 
+  select(id, question, response) %>% 
+  filter(id %in% job_offer_ids) %>% 
+  filter(!is.na(question)) %>%  
+  filter(question %in% c("postdoc_fellow", "predoc_fellow",
+                         "grant_pi", "grant_copi", "CNS_status")) %>% 
+  distinct() %>% 
+  count(question, response) %>% 
+  mutate(percent = get_percent(n, n_bio_offer_resp))
+
+write_csv(metrics_job_offer_table2, paste0("jadavji_biology/figures/grants_CNS_job_offers_",
                                  Sys.Date(), ".csv"))
